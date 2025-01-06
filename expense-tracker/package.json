@@ -4,13 +4,15 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
-    "build": "tite build",
+    "build": "vite build",
     "preview": "vite preview"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@firebasegen/default-connector": "file:dataconnect-generated/js/default-connector",
+    "firebase": "^11.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "recharts": "^2.15.0"
@@ -24,4 +26,3 @@
   },
   "description": ""
 }
-
