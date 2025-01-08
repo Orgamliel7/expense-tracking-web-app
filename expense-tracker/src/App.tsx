@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell } from 'recharts';
-import { db } from './firebase'; // Import the db from firebase.js
-import { doc, getDoc, setDoc } from 'firebase/firestore'; // Firestore functions
+import { db } from './firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import * as XLSX from 'xlsx';
+import { FaFileExcel } from 'react-icons/fa';
 
 interface CategoryBalance {
   דלק: number;
@@ -33,7 +35,7 @@ const COLORS = {
   בגדים: '#FF8C00',
 };
 
-const BACKGROUND_COLOR = '#2E1A47'; // Dark Purple background color
+const BACKGROUND_COLOR = '#2E1A47';
 
 function App() {
   const [balances, setBalances] = useState<CategoryBalance>(INITIAL_BALANCE);
@@ -42,7 +44,6 @@ function App() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [showReport, setShowReport] = useState(false);
 
-  // Fetch balance data and expenses when the app loads
   useEffect(() => {
     const fetchData = async () => {
       const docRef = doc(db, 'balances', 'expenseData');
@@ -58,7 +59,6 @@ function App() {
     fetchData();
   }, []);
 
-  // Update Firestore when the balance changes
   const updateDataInFirestore = async (updatedBalances: CategoryBalance, updatedExpenses: Expense[]) => {
     const docRef = doc(db, 'balances', 'expenseData');
     await setDoc(docRef, { balances: updatedBalances, expenses: updatedExpenses });
@@ -78,7 +78,6 @@ function App() {
           [selectedCategory]: Math.max(0, balances[selectedCategory] - newAmount),
         };
 
-        // Add the expense to the list
         const newExpense: Expense = {
           category: selectedCategory,
           amount: newAmount,
@@ -88,8 +87,6 @@ function App() {
 
         setBalances(newBalances);
         setExpenses(updatedExpenses);
-
-        // Save updated data to Firestore
         await updateDataInFirestore(newBalances, updatedExpenses);
 
         setAmount('');
@@ -108,37 +105,42 @@ function App() {
     await updateDataInFirestore(updatedBalances, expenses);
   };
 
+  const handleDownloadExcel = () => {
+    if (expenses.length === 0) {
+      alert('אין הוצאות להורדה');
+      return;
+    }
+
+    const worksheet = XLSX.utils.json_to_sheet(expenses);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Expenses');
+    XLSX.writeFile(workbook, 'Expense_Report.xlsx');
+  };
+
   const chartData = Object.entries(balances).map(([name, value]) => ({
     name,
     value,
   }));
 
   return (
-    <div
-      className="App"
-      style={{ backgroundColor: BACKGROUND_COLOR, minHeight: '100vh', padding: '20px' }}
-    >
-      <h1
-        style={{
-          textAlign: 'center',
-          fontSize: '2.8em',
-          color: '#fff',
-          marginBottom: '40px',
-          fontFamily: '"Segoe UI", sans-serif',
-          letterSpacing: '1px',
-        }}
-      >
+    <div className="App" style={{ backgroundColor: BACKGROUND_COLOR, minHeight: '100vh', padding: '20px' }}>
+      <h1 style={{
+        textAlign: 'center',
+        fontSize: '2.8em',
+        color: '#fff',
+        marginBottom: '40px',
+        fontFamily: '"Segoe UI", sans-serif',
+        letterSpacing: '1px',
+      }}>
         Expense Tracker
       </h1>
 
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          marginBottom: '40px',
-          flexWrap: 'wrap',
-        }}
-      >
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        marginBottom: '40px',
+        flexWrap: 'wrap',
+      }}>
         {Object.keys(balances).map((category) => (
           <button
             key={category}
@@ -146,10 +148,9 @@ function App() {
             style={{
               margin: '8px',
               padding: '12px 24px',
-              backgroundColor:
-                selectedCategory === category
-                  ? COLORS[category as keyof CategoryBalance]
-                  : '#E8E8E8',
+              backgroundColor: selectedCategory === category
+                ? COLORS[category as keyof CategoryBalance]
+                : '#E8E8E8',
               border: 'none',
               borderRadius: '12px',
               cursor: 'pointer',
@@ -208,33 +209,27 @@ function App() {
           const progress = (balance / total) * 100;
           return (
             <div key={category} style={{ margin: '20px 0' }}>
-              <span
-                style={{
-                  color: COLORS[category as keyof CategoryBalance],
-                  fontWeight: 'bold',
-                  fontSize: '1.3em',
-                  display: 'inline-block',
-                }}
-              >
+              <span style={{
+                color: COLORS[category as keyof CategoryBalance],
+                fontWeight: 'bold',
+                fontSize: '1.3em',
+                display: 'inline-block',
+              }}>
                 {category}: ₪{balance}
               </span>
-              <div
-                style={{
-                  height: '15px',
-                  width: '100%',
-                  backgroundColor: '#e0e0e0',
+              <div style={{
+                height: '15px',
+                width: '100%',
+                backgroundColor: '#e0e0e0',
+                borderRadius: '10px',
+                marginTop: '10px',
+              }}>
+                <div style={{
+                  height: '100%',
+                  width: `${progress}%`,
+                  backgroundColor: COLORS[category as keyof CategoryBalance],
                   borderRadius: '10px',
-                  marginTop: '10px',
-                }}
-              >
-                <div
-                  style={{
-                    height: '100%',
-                    width: `${progress}%`,
-                    backgroundColor: COLORS[category as keyof CategoryBalance],
-                    borderRadius: '10px',
-                  }}
-                />
+                }} />
               </div>
               <button
                 onClick={() => handleResetCategory(category as keyof CategoryBalance)}
@@ -255,34 +250,52 @@ function App() {
         })}
       </div>
 
-      <button
-        onClick={() => setShowReport(true)}
-        style={{
-          padding: '12px 24px',
-          backgroundColor: '#FF8C00',
-          border: 'none',
-          borderRadius: '12px',
-          fontSize: '1.1em',
-          color: '#fff',
-          cursor: 'pointer',
-        }}
-      >
-        דו"ח הוצאות
-      </button>
-
-      {showReport && (
-        <div
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px', gap: '10px' }}>
+        <button
+          onClick={() => setShowReport(true)}
           style={{
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            backgroundColor: '#fff',
-            padding: '20px',
+            padding: '12px 24px',
+            backgroundColor: '#FF8C00',
+            border: 'none',
             borderRadius: '12px',
-            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+            fontSize: '1.1em',
+            color: '#fff',
+            cursor: 'pointer',
           }}
         >
+          דו"ח הוצאות
+        </button>
+        <button
+          onClick={handleDownloadExcel}
+          style={{
+            padding: '10px',
+            backgroundColor: '#34A853',
+            border: 'none',
+            borderRadius: '12px',
+            fontSize: '1.1em',
+            color: '#fff',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <FaFileExcel />
+          Excel הורד כקובץ
+        </button>
+      </div>
+
+      {showReport && (
+        <div style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          backgroundColor: '#fff',
+          padding: '20px',
+          borderRadius: '12px',
+          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+        }}>
           <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>דו"ח הוצאות</h2>
           {expenses.length > 0 ? (
             <ul>
