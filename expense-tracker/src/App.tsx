@@ -42,14 +42,16 @@ function App() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [showReport, setShowReport] = useState(false);
 
-  // Fetch balance data when the app loads
+  // Fetch balance data and expenses when the app loads
   useEffect(() => {
     const fetchData = async () => {
       const docRef = doc(db, 'balances', 'expenseData');
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
-        setBalances(docSnap.data() as CategoryBalance);
+        const data = docSnap.data();
+        if (data.balances) setBalances(data.balances as CategoryBalance);
+        if (data.expenses) setExpenses(data.expenses as Expense[]);
       }
     };
 
@@ -57,9 +59,9 @@ function App() {
   }, []);
 
   // Update Firestore when the balance changes
-  const updateBalanceInFirestore = async (updatedBalances: CategoryBalance) => {
+  const updateDataInFirestore = async (updatedBalances: CategoryBalance, updatedExpenses: Expense[]) => {
     const docRef = doc(db, 'balances', 'expenseData');
-    await setDoc(docRef, updatedBalances);
+    await setDoc(docRef, { balances: updatedBalances, expenses: updatedExpenses });
   };
 
   const handleCategorySelect = (category: keyof CategoryBalance) => {
@@ -76,16 +78,19 @@ function App() {
           [selectedCategory]: Math.max(0, balances[selectedCategory] - newAmount),
         };
 
-        setBalances(newBalances);
-        await updateBalanceInFirestore(newBalances);
-
         // Add the expense to the list
         const newExpense: Expense = {
           category: selectedCategory,
           amount: newAmount,
           date: new Date().toLocaleString(),
         };
-        setExpenses([...expenses, newExpense]);
+        const updatedExpenses = [...expenses, newExpense];
+
+        setBalances(newBalances);
+        setExpenses(updatedExpenses);
+
+        // Save updated data to Firestore
+        await updateDataInFirestore(newBalances, updatedExpenses);
 
         setAmount('');
         setSelectedCategory(null);
@@ -100,7 +105,7 @@ function App() {
     };
 
     setBalances(updatedBalances);
-    await updateBalanceInFirestore(updatedBalances);
+    await updateDataInFirestore(updatedBalances, expenses);
   };
 
   const chartData = Object.entries(balances).map(([name, value]) => ({
@@ -298,15 +303,14 @@ function App() {
               backgroundColor: '#FF6B6B',
               border: 'none',
               borderRadius: '8px',
-              color: '#fff',
-              cursor: 'pointer',
+              fontSize: '1em',
+              fontWeight: 'bold',
             }}
           >
-            סגור
+            סגור דו"ח
           </button>
         </div>
       )}
-
     </div>
   );
 }
