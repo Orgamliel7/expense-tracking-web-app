@@ -44,7 +44,7 @@
     margin-bottom: 15px;
     border-radius: 8px;
     border: 1px solid #ccc;
-    width: 220px;
+    width: 150px;
   }
   
   .submit-button {
@@ -54,6 +54,7 @@
     border-radius: 12px;
     font-size: 1.1em;
     color: #fff;
+    margin-top: 20px;
   }
   
   .balance-list {
@@ -144,3 +145,37 @@
     font-size: 1em;
     font-weight: bold;
   }
+
+  .note-input {
+    padding: 10px 12px;
+    margin: 0 12px;
+    border: 1px solid #d1d1d1;
+    border-radius: 6px;
+    width: 250px;
+    font-size: 14px;
+    font-family: 'Arial', sans-serif;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  
+  .note-input:focus {
+    border-color: #4a90e2;
+    box-shadow: 0 0 6px rgba(74, 144, 226, 0.5);
+    outline: none;
+  }
+  
+  .expense-note {
+    color: #d93030;
+    font-style: italic;
+    font-weight: 500;
+    font-family: 'Georgia', serif;
+    margin-top: 5px;
+    display: block;
+    text-align: left;
+    transition: color 0.3s ease;
+  }
+  
+  .expense-note:hover {
+    color: #b02020;
+  }
+  

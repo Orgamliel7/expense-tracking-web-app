@@ -50,21 +50,34 @@ function App() {
           ...balances,
           [selectedCategory]: Math.max(0, balances[selectedCategory] - newAmount),
         };
-
+  
+        // Format current date as DD/MM/YYYY HH:mm
+        const now = new Date();
+        const formattedDate = [
+          String(now.getDate()).padStart(2, '0'),
+          String(now.getMonth() + 1).padStart(2, '0'),
+          now.getFullYear()
+        ].join('/') + ' ' + 
+        [
+          String(now.getHours()).padStart(2, '0'),
+          String(now.getMinutes()).padStart(2, '0')
+        ].join(':');
+  
         const newExpense: Expense = {
           category: selectedCategory,
           amount: newAmount,
-          date: new Date().toLocaleString(),
-          note: note.trim() || undefined, // Only include note if it's not empty
+          date: formattedDate,
+          note: note.trim() || undefined,
         };
+  
         const updatedExpenses = [...expenses, newExpense];
-
+  
         setBalances(newBalances);
         setExpenses(updatedExpenses);
         await updateDataInFirestore(newBalances, updatedExpenses);
-
+  
         setAmount('');
-        setNote(''); // Clear note after submission
+        setNote('');
         setSelectedCategory(null);
       }
     }
@@ -133,7 +146,7 @@ function App() {
           disabled={!selectedCategory || !amount}
           className="submit-button"
         >
-          הפחת הוצאה
+          אישור
         </button>
       </form>
 
@@ -189,7 +202,9 @@ function App() {
               {expenses.map((expense, index) => (
                 <li key={index}>
                   {expense.date} - {expense.category} - ₪{expense.amount}
-                  {expense.note && <span className="expense-note"> - הערה: {expense.note}</span>}
+                  {expense.note && (
+                    <span className="expense-note"> - הערה: {expense.note}</span>
+                  )}
                 </li>
               ))}
             </ul>

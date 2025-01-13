@@ -15,22 +15,64 @@ interface MonthlyData {
 }
 
 const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose }) => {
+  // Helper function to format date as DD/MM/YYYY
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   // Calculate monthly savings
   const calculateMonthlySavings = (): MonthlyData[] => {
     const monthlyExpenses = expenses.reduce((acc, expense) => {
       const date = new Date(expense.date);
-      const monthKey = `${date.getMonth() + 1}/${date.getFullYear()}`;
+
+      if (isNaN(date.getTime())) {
+        console.warn(`Invalid date: ${expense.date}`);
+        return acc;
+      }
+
+      // Create a key for the first day of the month
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const monthStart = new Date(year, month, 1);
+      const monthKey = monthStart.toISOString().slice(0, 7); // YYYY-MM format
+      
       acc[monthKey] = (acc[monthKey] || 0) + expense.amount;
       return acc;
     }, {} as Record<string, number>);
 
-    // Calculate total initial budget
     const totalBudget = Object.values(INITIAL_BALANCE).reduce((a, b) => a + b, 0);
 
-    return Object.entries(monthlyExpenses).map(([month, spent]) => ({
-      month,
-      saved: totalBudget - spent,
-    }));
+    // Convert ISO date format to display format and calculate savings
+    return Object.entries(monthlyExpenses)
+      .map(([monthKey, spent]) => {
+        const [year, month] = monthKey.split('-');
+        return {
+          month: `${month}/${year.slice(2)}`, // Format as MM/YY
+          saved: totalBudget - spent,
+        };
+      })
+      .sort((a, b) => {
+        // Sort by date
+        const [aMonth, aYear] = a.month.split('/');
+        const [bMonth, bYear] = b.month.split('/');
+        const aDate = new Date(2000 + parseInt(aYear), parseInt(aMonth) - 1);
+        const bDate = new Date(2000 + parseInt(bYear), parseInt(bMonth) - 1);
+        return aDate.getTime() - bDate.getTime();
+      })
+      // Group expenses by month and combine their amounts
+      .reduce((acc: MonthlyData[], current) => {
+        const existingMonth = acc.find(item => item.month === current.month);
+        if (existingMonth) {
+          existingMonth.saved = Math.min(existingMonth.saved, current.saved);
+        } else {
+          acc.push(current);
+        }
+        return acc;
+      }, []);
   };
 
   // Calculate spending by category
@@ -50,7 +92,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose }) =>
       const spent = initialAmount - balance;
       return {
         name: category,
-        value: (spent / totalSpent) * 100,
+        value: totalSpent > 0 ? (spent / totalSpent) * 100 : 0,
         amount: spent,
       };
     });
@@ -82,31 +124,29 @@ const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose }) =>
           <h3>התפלגות הוצאות לפי קטגוריה</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
-                <Pie
-                data={categorySpending.filter((entry) => entry.value > 0)} // Filter out entries with 0% value
+              <Pie
+                data={categorySpending.filter((entry) => entry.value > 0)}
                 dataKey="value"
                 nameKey="name"
                 cx="50%"
                 cy="50%"
                 outerRadius={100}
                 label={({ name, value }) => `${name} (${Number(value).toFixed(1)}%)`}
-                >
+              >
                 {categorySpending
-                    .filter((entry) => entry.value > 0) // Apply the same filter here
-                    .map((entry, index) => (
+                  .filter((entry) => entry.value > 0)
+                  .map((entry, index) => (
                     <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[entry.name as keyof CategoryBalance]}
+                      key={`cell-${index}`}
+                      fill={COLORS[entry.name as keyof CategoryBalance]}
                     />
-                    ))}
-                </Pie>
-                <Tooltip
+                  ))}
+              </Pie>
+              <Tooltip
                 formatter={(value, name) => [`${Number(value).toFixed(1)}%`, name]}
-                />
+              />
             </PieChart>
           </ResponsiveContainer>
-
-          
         </div>
 
         <div className="analytics-details">

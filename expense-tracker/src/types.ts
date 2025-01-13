@@ -10,6 +10,7 @@ export interface CategoryBalance {
     category: keyof CategoryBalance;
     amount: number;
     date: string;
+    note?: string;
   }
   
   export const INITIAL_BALANCE: CategoryBalance = {
