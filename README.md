@@ -1,7 +1,3 @@
-Here's a beautiful README template for your project:
-
----
-
 # 📊 מעקב הוצאות - Expense Tracker
 
 Welcome to **מעקב הוצאות** (Expense Tracker), a simple yet powerful application designed to help you track and manage your expenses. With a beautiful and intuitive interface, you can monitor your financial balance across multiple categories, easily add new expenses, and generate reports in various formats.
