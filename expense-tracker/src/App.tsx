@@ -33,8 +33,29 @@ function App() {
   }, []);
 
   const updateDataInFirestore = async (updatedBalances: CategoryBalance, updatedExpenses: Expense[]) => {
+    // Sanitize data: replace undefined values with defaults
+    const sanitizedBalances = Object.fromEntries(
+      Object.entries(updatedBalances).map(([key, value]) => [key, value ?? 0])
+    );
+  
+    const sanitizedExpenses = updatedExpenses.map(({ category, amount, date, note }) => ({
+      category,
+      amount: amount ?? 0,
+      date,
+      note: note ?? '',
+    }));
+  
     const docRef = doc(db, 'balances', 'expenseData');
-    await setDoc(docRef, { balances: updatedBalances, expenses: updatedExpenses });
+  
+    try {
+      await setDoc(docRef, {
+        balances: sanitizedBalances,
+        expenses: sanitizedExpenses,
+      });
+      console.log('Document successfully updated');
+    } catch (error) {
+      console.error('Error updating document:', error);
+    }
   };
 
   const handleCategorySelect = (category: keyof CategoryBalance) => {
