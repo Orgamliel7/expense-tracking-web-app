@@ -77,6 +77,27 @@ function App() {
     }
   };
 
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && selectedCategory && amount) {
+        // Submit form when Enter is pressed
+        handleAmountSubmit(e as unknown as React.FormEvent);
+      }
+      if (e.key === 'Escape') {
+        // Hide report and reset when Escape is pressed
+        setShowReport(false);
+        setShowAnalytics(false);
+        setSelectedCategory(null);
+        setAmount('');
+        setNote('');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedCategory, amount]);
+
   const handleDeleteExpense = async (index: number) => {
     const expenseToDelete = expenses[index];
     const updatedBalances = {

@@ -156,6 +156,7 @@
     font-family: 'Arial', sans-serif;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     transition: border-color 0.3s, box-shadow 0.3s;
+    background-color: #f2f2f2; /* Light gray background */
   }
   
   .note-input:focus {
