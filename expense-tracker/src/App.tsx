@@ -185,8 +185,9 @@ function App() {
 
       <div className="balance-list">
         {Object.entries(balances).map(([category, balance]) => {
-          const total = INITIAL_BALANCE[category as keyof CategoryBalance];
+          const total = INITIAL_BALANCE[category as keyof CategoryBalance]; // Get initial value
           const progress = (balance / total) * 100;
+
           return (
             <div key={category} className="balance-item">
               <span
@@ -195,7 +196,8 @@ function App() {
                   color: COLORS[category as keyof CategoryBalance],
                 }}
               >
-                {category}: ₪{balance}
+                {category}: ₪{balance} 
+                {balance !== total && ` (תקציב חודשי: ₪${total})`} {/* Display initial value only if there's a change */}
               </span>
               <div className="progress-bar-bg">
                 <div
