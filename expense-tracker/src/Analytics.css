@@ -1,0 +1,73 @@
+.analytics-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .analytics-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  .analytics-content h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #2E1A47;
+  }
+  
+  .analytics-content h3 {
+    text-align: center;
+    margin: 20px 0;
+    color: #2E1A47;
+  }
+  
+  .chart-container {
+    margin-bottom: 40px;
+    padding: 20px;
+    border-radius: 10px;
+    background-color: #f8f9fa;
+  }
+  
+  .analytics-details {
+    margin: 20px 0;
+  }
+  
+  .analytics-details ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .analytics-details li {
+    margin: 10px 0;
+    font-size: 1.1em;
+    font-weight: bold;
+  }
+  
+  .close-button {
+    display: block;
+    margin: 20px auto 0;
+    padding: 10px 30px;
+    background-color: #FF6B6B;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .close-button:hover {
+    background-color: #ff5252;
+  }

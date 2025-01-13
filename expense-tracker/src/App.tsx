@@ -5,6 +5,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import * as XLSX from 'xlsx';
 import { FaFileExcel } from 'react-icons/fa';
 import { CategoryBalance, Expense, INITIAL_BALANCE, COLORS } from './types';
+import Analytics from './Analytics';
 import './styles.css';
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
   const [amount, setAmount] = useState<string>('');
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [showReport, setShowReport] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -160,6 +162,9 @@ function App() {
         <button onClick={() => setShowReport(true)} className="report-button">
           דו"ח הוצאות
         </button>
+        <button onClick={() => setShowAnalytics(true)} className="report-button">
+          אנליזות
+        </button>
         <button onClick={handleDownloadExcel} className="excel-button">
           <FaFileExcel />
           Excel הורד כקובץ
@@ -184,6 +189,14 @@ function App() {
             סגור דו"ח
           </button>
         </div>
+      )}
+
+      {showAnalytics && (
+        <Analytics
+          expenses={expenses}
+          balances={balances}
+          onClose={() => setShowAnalytics(false)}
+        />
       )}
     </div>
   );
