@@ -178,4 +178,53 @@
   .expense-note:hover {
     color: #b02020;
   }
+
+  .expense-list {
+    padding: 0;
+    list-style: none;
+  }
+  
+  .expense-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 5px;
+  }
+  
+  .delete-expense-button {
+    background: #ff4d4d;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  
+  .delete-expense-button:hover {
+    background: #e60000;
+  }
+  
+  .clear-report-button {
+    margin-top: 15px;
+    padding: 10px 15px;
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    float: right; /* Moves the button to the right */
+    transition: background 0.3s ease;
+  }
+  
+  .clear-report-button:hover {
+    background-color: #45a049;
+  }
   

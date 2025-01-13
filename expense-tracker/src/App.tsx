@@ -12,7 +12,7 @@ function App() {
   const [balances, setBalances] = useState<CategoryBalance>(INITIAL_BALANCE);
   const [selectedCategory, setSelectedCategory] = useState<keyof CategoryBalance | null>(null);
   const [amount, setAmount] = useState<string>('');
-  const [note, setNote] = useState<string>(''); // New state for note
+  const [note, setNote] = useState<string>('');
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [showReport, setShowReport] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
@@ -50,37 +50,55 @@ function App() {
           ...balances,
           [selectedCategory]: Math.max(0, balances[selectedCategory] - newAmount),
         };
-  
-        // Format current date as DD/MM/YYYY HH:mm
+
         const now = new Date();
-        const formattedDate = [
-          String(now.getDate()).padStart(2, '0'),
-          String(now.getMonth() + 1).padStart(2, '0'),
-          now.getFullYear()
-        ].join('/') + ' ' + 
-        [
-          String(now.getHours()).padStart(2, '0'),
-          String(now.getMinutes()).padStart(2, '0')
-        ].join(':');
-  
+        const formattedDate = `${now.toLocaleDateString()} ${now.toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        })}`;
+
         const newExpense: Expense = {
           category: selectedCategory,
           amount: newAmount,
           date: formattedDate,
           note: note.trim() || undefined,
         };
-  
+
         const updatedExpenses = [...expenses, newExpense];
-  
+
         setBalances(newBalances);
         setExpenses(updatedExpenses);
         await updateDataInFirestore(newBalances, updatedExpenses);
-  
+
         setAmount('');
         setNote('');
         setSelectedCategory(null);
       }
     }
+  };
+
+  const handleDeleteExpense = async (index: number) => {
+    const expenseToDelete = expenses[index];
+    const updatedBalances = {
+      ...balances,
+      [expenseToDelete.category]: balances[expenseToDelete.category] + expenseToDelete.amount,
+    };
+    const updatedExpenses = expenses.filter((_, i) => i !== index);
+
+    setBalances(updatedBalances);
+    setExpenses(updatedExpenses);
+    await updateDataInFirestore(updatedBalances, updatedExpenses);
+  };
+
+  const handleClearExpenses = async () => {
+    const restoredBalances = expenses.reduce((acc, expense) => {
+      acc[expense.category] += expense.amount;
+      return acc;
+    }, { ...balances });
+
+    setBalances(restoredBalances);
+    setExpenses([]);
+    await updateDataInFirestore(restoredBalances, []);
   };
 
   const handleResetCategory = async (category: keyof CategoryBalance) => {
@@ -116,9 +134,7 @@ function App() {
             onClick={() => handleCategorySelect(category as keyof CategoryBalance)}
             className={`category-button ${selectedCategory === category ? 'selected' : ''}`}
             style={{
-              backgroundColor: selectedCategory === category
-                ? COLORS[category as keyof CategoryBalance]
-                : '#E8E8E8'
+              backgroundColor: selectedCategory === category ? COLORS[category as keyof CategoryBalance] : '#E8E8E8',
             }}
           >
             {category}
@@ -141,11 +157,7 @@ function App() {
           placeholder="הערה (לא חובה)"
           className="note-input"
         />
-        <button
-          type="submit"
-          disabled={!selectedCategory || !amount}
-          className="submit-button"
-        >
+        <button type="submit" disabled={!selectedCategory || !amount} className="submit-button">
           אישור
         </button>
       </form>
@@ -156,9 +168,12 @@ function App() {
           const progress = (balance / total) * 100;
           return (
             <div key={category} className="balance-item">
-              <span className="category-balance" style={{
-                color: COLORS[category as keyof CategoryBalance],
-              }}>
+              <span
+                className="category-balance"
+                style={{
+                  color: COLORS[category as keyof CategoryBalance],
+                }}
+              >
                 {category}: ₪{balance}
               </span>
               <div className="progress-bar-bg">
@@ -170,10 +185,7 @@ function App() {
                   }}
                 />
               </div>
-              <button
-                onClick={() => handleResetCategory(category as keyof CategoryBalance)}
-                className="reset-button"
-              >
+              <button onClick={() => handleResetCategory(category as keyof CategoryBalance)} className="reset-button">
                 Reset to Initial
               </button>
             </div>
@@ -198,16 +210,22 @@ function App() {
         <div className="report-modal">
           <h2>דו"ח הוצאות</h2>
           {expenses.length > 0 ? (
-            <ul>
-              {expenses.map((expense, index) => (
-                <li key={index}>
-                  {expense.date} - {expense.category} - ₪{expense.amount}
-                  {expense.note && (
-                    <span className="expense-note"> - הערה: {expense.note}</span>
-                  )}
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="expense-list">
+                {expenses.map((expense, index) => (
+                  <li key={index} className="expense-item">
+                    {expense.date} - {expense.category} - ₪{expense.amount}
+                    {expense.note && <span className="expense-note"> - הערה: {expense.note}</span>}
+                    <button onClick={() => handleDeleteExpense(index)} className="delete-expense-button">
+                      &times;
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <button onClick={handleClearExpenses} className="clear-report-button">
+                נקה דו"ח
+              </button>
+            </>
           ) : (
             <p>אין הוצאות עדיין</p>
           )}
@@ -218,11 +236,7 @@ function App() {
       )}
 
       {showAnalytics && (
-        <Analytics
-          expenses={expenses}
-          balances={balances}
-          onClose={() => setShowAnalytics(false)}
-        />
+        <Analytics expenses={expenses} balances={balances} onClose={() => setShowAnalytics(false)} />
       )}
     </div>
   );

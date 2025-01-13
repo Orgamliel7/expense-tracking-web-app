@@ -15,64 +15,65 @@ interface MonthlyData {
 }
 
 const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose }) => {
-  // Helper function to format date as DD/MM/YYYY
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
-
   // Calculate monthly savings
   const calculateMonthlySavings = (): MonthlyData[] => {
+    // Calculate total initial budget
+    const totalInitialBudget = Object.values(INITIAL_BALANCE).reduce((a, b) => a + b, 0);
+
+    // Group expenses by month
     const monthlyExpenses = expenses.reduce((acc, expense) => {
       const date = new Date(expense.date);
-
+      
       if (isNaN(date.getTime())) {
         console.warn(`Invalid date: ${expense.date}`);
         return acc;
       }
 
-      // Create a key for the first day of the month
-      const year = date.getFullYear();
-      const month = date.getMonth();
-      const monthStart = new Date(year, month, 1);
-      const monthKey = monthStart.toISOString().slice(0, 7); // YYYY-MM format
+      // Create month key in MM/YYYY format
+      const monthKey = `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
       
-      acc[monthKey] = (acc[monthKey] || 0) + expense.amount;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const totalBudget = Object.values(INITIAL_BALANCE).reduce((a, b) => a + b, 0);
-
-    // Convert ISO date format to display format and calculate savings
-    return Object.entries(monthlyExpenses)
-      .map(([monthKey, spent]) => {
-        const [year, month] = monthKey.split('-');
-        return {
-          month: `${month}/${year.slice(2)}`, // Format as MM/YY
-          saved: totalBudget - spent,
+      if (!acc[monthKey]) {
+        acc[monthKey] = {
+          total: 0,
+          month: monthKey
         };
-      })
+      }
+      
+      acc[monthKey].total += expense.amount;
+      return acc;
+    }, {} as Record<string, { total: number; month: string }>);
+
+    // Convert to array and calculate savings
+    const savings = Object.values(monthlyExpenses)
+      .map(({ month, total }) => ({
+        month: month,
+        saved: totalInitialBudget - total
+      }))
       .sort((a, b) => {
         // Sort by date
         const [aMonth, aYear] = a.month.split('/');
         const [bMonth, bYear] = b.month.split('/');
-        const aDate = new Date(2000 + parseInt(aYear), parseInt(aMonth) - 1);
-        const bDate = new Date(2000 + parseInt(bYear), parseInt(bMonth) - 1);
-        return aDate.getTime() - bDate.getTime();
-      })
-      // Group expenses by month and combine their amounts
-      .reduce((acc: MonthlyData[], current) => {
-        const existingMonth = acc.find(item => item.month === current.month);
-        if (existingMonth) {
-          existingMonth.saved = Math.min(existingMonth.saved, current.saved);
-        } else {
-          acc.push(current);
-        }
-        return acc;
-      }, []);
+        const dateA = new Date(parseInt(aYear), parseInt(aMonth) - 1);
+        const dateB = new Date(parseInt(bYear), parseInt(bMonth) - 1);
+        return dateB.getTime() - dateA.getTime(); // Reverse chronological order
+      });
+
+    // Add current month if it's not in the list
+    const today = new Date();
+    const currentMonthKey = `${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+    
+    if (!savings.find(s => s.month === currentMonthKey)) {
+      savings.unshift({
+        month: currentMonthKey,
+        saved: totalInitialBudget // For current month, start with full budget if no expenses
+      });
+    }
+
+    // Format month display as MM/YY
+    return savings.map(item => ({
+      month: item.month.replace(/(\d{2})\/(\d{4})/, '$1/' + item.month.slice(-2)),
+      saved: item.saved
+    }));
   };
 
   // Calculate spending by category
