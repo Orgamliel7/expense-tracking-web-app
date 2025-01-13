@@ -12,6 +12,7 @@ function App() {
   const [balances, setBalances] = useState<CategoryBalance>(INITIAL_BALANCE);
   const [selectedCategory, setSelectedCategory] = useState<keyof CategoryBalance | null>(null);
   const [amount, setAmount] = useState<string>('');
+  const [note, setNote] = useState<string>(''); // New state for note
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [showReport, setShowReport] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
@@ -54,6 +55,7 @@ function App() {
           category: selectedCategory,
           amount: newAmount,
           date: new Date().toLocaleString(),
+          note: note.trim() || undefined, // Only include note if it's not empty
         };
         const updatedExpenses = [...expenses, newExpense];
 
@@ -62,6 +64,7 @@ function App() {
         await updateDataInFirestore(newBalances, updatedExpenses);
 
         setAmount('');
+        setNote(''); // Clear note after submission
         setSelectedCategory(null);
       }
     }
@@ -91,7 +94,7 @@ function App() {
 
   return (
     <div className="App">
-      <h1 className="app-title">Expense Tracker</h1>
+      <h1 className="app-title">מעקב הוצאות</h1>
 
       <div className="category-buttons">
         {Object.keys(balances).map((category) => (
@@ -118,12 +121,19 @@ function App() {
           placeholder="Enter amount"
           className="amount-input"
         />
+        <input
+          type="text"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="הערה (לא חובה)"
+          className="note-input"
+        />
         <button
           type="submit"
           disabled={!selectedCategory || !amount}
           className="submit-button"
         >
-          Subtract Expense
+          הפחת הוצאה
         </button>
       </form>
 
@@ -179,6 +189,7 @@ function App() {
               {expenses.map((expense, index) => (
                 <li key={index}>
                   {expense.date} - {expense.category} - ₪{expense.amount}
+                  {expense.note && <span className="expense-note"> - הערה: {expense.note}</span>}
                 </li>
               ))}
             </ul>
