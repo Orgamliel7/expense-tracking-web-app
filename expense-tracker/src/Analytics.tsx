@@ -14,6 +14,10 @@ interface MonthlyData {
   saved: number;
 }
 
+interface FutureMonthlyData extends MonthlyData {
+  future: number;
+}
+
 const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose }) => {
   // Calculate monthly savings
   const calculateMonthlySavings = (): MonthlyData[] => {
@@ -99,6 +103,25 @@ const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose }) =>
     });
   };
 
+  const generateFutureMonths = (): FutureMonthlyData[] => {
+    const today = new Date();
+    const futureMonths: FutureMonthlyData[] = [];
+    
+    const futureCount = 6;
+
+    for (let i = 1; i <= futureCount; i++) {
+      const futureDate = new Date(today.getFullYear(), today.getMonth() + i);
+      const monthKey = `${String(futureDate.getMonth() + 1).padStart(2, '0')}/${String(futureDate.getFullYear()).slice(-2)}`;
+      futureMonths.push({
+        month: monthKey,
+        saved: 0,
+        future: 1, // Indicate this is a future placeholder
+      });
+    }
+
+    return futureMonths;
+  };
+
   const monthlySavings = calculateMonthlySavings();
   const categorySpending = calculateCategorySpending();
 
@@ -110,13 +133,26 @@ const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose }) =>
         <div className="chart-container">
           <h3>חסכונות חודשיים</h3>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={monthlySavings}>
+            <BarChart data={[...monthlySavings, ...generateFutureMonths()]}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
-              <Tooltip formatter={(value) => `₪${Number(value).toFixed(2)}`} />
+              <Tooltip formatter={(value) => (value !== 0 ? `₪${Number(value).toFixed(2)}` : "No data yet")} />
               <Legend />
-              <Bar dataKey="saved" fill="#82ca9d" name="חסכון חודשי" />
+              <Bar 
+                dataKey="saved" 
+                fill="#82ca9d" 
+                name="חסכון חודשי" 
+                barSize={15} // Make bars thinner
+                radius={[10, 10, 0, 0]} 
+              />
+              <Bar 
+                dataKey="future" 
+                fill="lightgray" // Shallow gray for future months
+                name="חודשים עתידיים" 
+                barSize={15} 
+                radius={[10, 10, 0, 0]} 
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>

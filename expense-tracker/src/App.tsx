@@ -198,7 +198,7 @@ function App() {
           type="number"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          placeholder="Enter amount"
+          placeholder="הזן סכום"
           className="amount-input"
         />
         <input
