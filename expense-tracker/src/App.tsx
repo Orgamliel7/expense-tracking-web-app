@@ -101,10 +101,19 @@ function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && selectedCategory && amount) {
-        // Submit form when Enter is pressed
-        handleAmountSubmit(e as unknown as React.FormEvent);
+      if (e.key === 'Enter') {
+        e.preventDefault(); // Prevents default form submission behavior
+        
+        const activeElement = document.activeElement as HTMLElement;
+  
+        // Check if the user is inside the amount or note input
+        if (activeElement && (activeElement.classList.contains('amount-input') || activeElement.classList.contains('note-input'))) {
+          if (selectedCategory && amount) {
+            handleAmountSubmit(e as unknown as React.FormEvent);
+          }
+        }
       }
+  
       if (e.key === 'Escape') {
         // Hide report and reset when Escape is pressed
         setShowReport(false);
@@ -114,10 +123,10 @@ function App() {
         setNote('');
       }
     };
-
+  
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedCategory, amount]);
+  }, [selectedCategory, amount, note]);
 
   const handleDeleteExpense = async (index: number) => {
     const expenseToDelete = expenses[index];
@@ -230,7 +239,7 @@ function App() {
                 />
               </div>
               <button onClick={() => handleResetCategory(category as keyof CategoryBalance)} className="reset-button">
-                Reset to Initial
+                איפוס
               </button>
             </div>
           );
