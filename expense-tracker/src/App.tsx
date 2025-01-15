@@ -1,36 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { PieChart, Pie, Cell } from 'recharts';
-import { db } from './firebase';
+import { CategoryButtons } from './components/CategoryButtons/CategoryButtons';
+import { ExpenseForm } from './components/ExpenseForm/ExpenseForm';
+import { BalanceList } from './components/BalanceList/BalanceList';
+import { ReportModal } from './components/ReportModal/ReportModal';
+import { ActionButtons } from './components/ActionButtons/ActionButtons';
+import Analytics from "./components/Analytics/Analytics"
+import { db } from './services/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import * as XLSX from 'xlsx';
-import { FaFileExcel } from 'react-icons/fa';
-import { CategoryBalance, Expense, INITIAL_BALANCE, COLORS } from './types';
-import Analytics from './Analytics';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { useLoading } from './hooks/useLoading';
+import { CategoryBalance, Expense, INITIAL_BALANCE } from './types';
 import './styles.css';
 
 function App() {
   const [balances, setBalances] = useState<CategoryBalance>(INITIAL_BALANCE);
   const [selectedCategory, setSelectedCategory] = useState<keyof CategoryBalance | null>(null);
-  const [amount, setAmount] = useState<string>('');
-  const [note, setNote] = useState<string>('');
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [showReport, setShowReport] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const docRef = doc(db, 'balances', 'expenseData');
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (data.balances) setBalances(data.balances as CategoryBalance);
-        if (data.expenses) setExpenses(data.expenses as Expense[]);
-      }
-    };
-
-    fetchData();
-  }, []);
+  
+  const { isLoading, error, withLoading } = useLoading();
 
   const updateDataInFirestore = async (updatedBalances: CategoryBalance, updatedExpenses: Expense[]) => {
     // Sanitize data: replace undefined values with defaults
@@ -55,21 +44,31 @@ function App() {
       console.log('Document successfully updated');
     } catch (error) {
       console.error('Error updating document:', error);
+      throw new Error('Failed to update expense data');
     }
   };
 
-  const handleCategorySelect = (category: keyof CategoryBalance) => {
-    setSelectedCategory(category);
-  };
+  useEffect(() => {
+    const fetchData = async () => {
+      const docRef = doc(db, 'balances', 'expenseData');
+      const docSnap = await getDoc(docRef);
 
-  const handleAmountSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedCategory && amount) {
-      const newAmount = Number(amount);
-      if (!isNaN(newAmount) && newAmount > 0) {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.balances) setBalances(data.balances as CategoryBalance);
+        if (data.expenses) setExpenses(data.expenses as Expense[]);
+      }
+    };
+
+    withLoading(fetchData);
+  }, []);
+
+  const handleExpenseSubmit = async (amount: number, note: string) => {
+    if (selectedCategory) {
+      await withLoading(async () => {
         const newBalances = {
           ...balances,
-          [selectedCategory]: Math.max(0, balances[selectedCategory] - newAmount),
+          [selectedCategory]: Math.max(0, balances[selectedCategory] - amount),
         };
 
         const now = new Date();
@@ -80,7 +79,7 @@ function App() {
 
         const newExpense: Expense = {
           category: selectedCategory,
-          amount: newAmount,
+          amount,
           date: formattedDate,
           note: note.trim() || undefined,
         };
@@ -90,206 +89,76 @@ function App() {
         setBalances(newBalances);
         setExpenses(updatedExpenses);
         await updateDataInFirestore(newBalances, updatedExpenses);
-
-        setAmount('');
-        setNote('');
         setSelectedCategory(null);
-      }
+      });
     }
   };
 
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        e.preventDefault(); // Prevents default form submission behavior
-        
-        const activeElement = document.activeElement as HTMLElement;
-  
-        // Check if the user is inside the amount or note input
-        if (activeElement && (activeElement.classList.contains('amount-input') || activeElement.classList.contains('note-input'))) {
-          if (selectedCategory && amount) {
-            handleAmountSubmit(e as unknown as React.FormEvent);
-          }
-        }
-      }
-  
-      if (e.key === 'Escape') {
-        // Hide report and reset when Escape is pressed
-        setShowReport(false);
-        setShowAnalytics(false);
-        setSelectedCategory(null);
-        setAmount('');
-        setNote('');
-      }
-    };
-  
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedCategory, amount, note]);
-
-  const handleDeleteExpense = async (index: number) => {
-    const expenseToDelete = expenses[index];
-    const updatedBalances = {
-      ...balances,
-      [expenseToDelete.category]: balances[expenseToDelete.category] + expenseToDelete.amount,
-    };
-    const updatedExpenses = expenses.filter((_, i) => i !== index);
-
-    setBalances(updatedBalances);
-    setExpenses(updatedExpenses);
-    await updateDataInFirestore(updatedBalances, updatedExpenses);
+  const handleEscape = () => {
+    setShowReport(false);
+    setShowAnalytics(false);
+    setSelectedCategory(null);
   };
 
-  const handleClearExpenses = async () => {
-    const restoredBalances = expenses.reduce((acc, expense) => {
-      acc[expense.category] += expense.amount;
-      return acc;
-    }, { ...balances });
+  useKeyboardShortcuts({
+    onEscape: handleEscape
+  });
 
-    setBalances(restoredBalances);
-    setExpenses([]);
-    await updateDataInFirestore(restoredBalances, []);
-  };
-
-  const handleResetCategory = async (category: keyof CategoryBalance) => {
-    const updatedBalances = {
-      ...balances,
-      [category]: INITIAL_BALANCE[category],
-    };
-
-    setBalances(updatedBalances);
-    await updateDataInFirestore(updatedBalances, expenses);
-  };
-
-  const handleDownloadExcel = () => {
-    if (expenses.length === 0) {
-      alert('אין הוצאות להורדה');
-      return;
-    }
-
-    const worksheet = XLSX.utils.json_to_sheet(expenses);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Expenses');
-    XLSX.writeFile(workbook, 'Expense_Report.xlsx');
-  };
+  if (error) {
+    return <div className="error-message">Error: {error}</div>;
+  }
 
   return (
     <div className="App">
       <h1 className="app-title">מעקב הוצאות</h1>
 
-      <div className="category-buttons">
-        {Object.keys(balances).map((category) => (
-          <button
-            key={category}
-            onClick={() => handleCategorySelect(category as keyof CategoryBalance)}
-            className={`category-button ${selectedCategory === category ? 'selected' : ''}`}
-            style={{
-              backgroundColor: selectedCategory === category ? COLORS[category as keyof CategoryBalance] : '#E8E8E8',
-            }}
-          >
-            {category}
-          </button>
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="loading-spinner">Loading...</div>
+      ) : (
+        <>
+          <CategoryButtons
+            balances={balances}
+            selectedCategory={selectedCategory}
+            onCategorySelect={setSelectedCategory}
+          />
 
-      <form onSubmit={handleAmountSubmit} className="expense-form">
-        <input
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="הזן סכום"
-          className="amount-input"
-        />
-        <input
-          type="text"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="הערה (לא חובה)"
-          className="note-input"
-        />
-        <button type="submit" disabled={!selectedCategory || !amount} className="submit-button">
-          אישור
-        </button>
-      </form>
+          <ExpenseForm
+            selectedCategory={selectedCategory}
+            onSubmit={handleExpenseSubmit}
+          />
 
-      <div className="balance-list">
-        {Object.entries(balances).map(([category, balance]) => {
-          const total = INITIAL_BALANCE[category as keyof CategoryBalance]; // Get initial value
-          const progress = (balance / total) * 100;
+          <BalanceList
+            balances={balances}
+            setBalances={setBalances}
+            expenses={expenses}
+            updateExpenseData={updateDataInFirestore}
+          />
 
-          return (
-            <div key={category} className="balance-item">
-              <span
-                className="category-balance"
-                style={{
-                  color: COLORS[category as keyof CategoryBalance],
-                }}
-              >
-                {category}: ₪{balance} 
-                {balance !== total && ` (תקציב חודשי: ₪${total})`} {/* Display initial value only if there's a change */}
-              </span>
-              <div className="progress-bar-bg">
-                <div
-                  className="progress-bar"
-                  style={{
-                    width: `${progress}%`,
-                    backgroundColor: COLORS[category as keyof CategoryBalance],
-                  }}
-                />
-              </div>
-              <button onClick={() => handleResetCategory(category as keyof CategoryBalance)} className="reset-button">
-                איפוס
-              </button>
-            </div>
-          );
-        })}
-      </div>
+          <ActionButtons
+            expenses={expenses}
+            onShowReport={() => setShowReport(true)}
+            onShowAnalytics={() => setShowAnalytics(true)}
+          />
 
-      <div className="report-buttons">
-        <button onClick={() => setShowReport(true)} className="report-button">
-          דו"ח הוצאות
-        </button>
-        <button onClick={() => setShowAnalytics(true)} className="report-button">
-          אנליזות
-        </button>
-        <button onClick={handleDownloadExcel} className="excel-button">
-          <FaFileExcel />
-          Excel הורד כקובץ
-        </button>
-      </div>
-
-      {showReport && (
-        <div className="report-modal">
-          <h2>דו"ח הוצאות</h2>
-          {expenses.length > 0 ? (
-            <>
-              <ul className="expense-list">
-                {expenses.map((expense, index) => (
-                  <li key={index} className="expense-item">
-                    {expense.date} - {expense.category} - ₪{expense.amount}
-                    {expense.note && <span className="expense-note"> - הערה: {expense.note}</span>}
-                    <button onClick={() => handleDeleteExpense(index)} className="delete-expense-button">
-                      &times;
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              <button onClick={handleClearExpenses} className="clear-report-button">
-                נקה דו"ח
-              </button>
-            </>
-          ) : (
-            <p>אין הוצאות עדיין</p>
+          {showReport && (
+            <ReportModal
+              expenses={expenses}
+              balances={balances}
+              setBalances={setBalances}
+              setExpenses={setExpenses}
+              onClose={() => setShowReport(false)}
+              updateExpenseData={updateDataInFirestore}
+            />
           )}
-          <button onClick={() => setShowReport(false)} className="close-button">
-            סגור דו"ח
-          </button>
-        </div>
-      )}
 
-      {showAnalytics && (
-        <Analytics expenses={expenses} balances={balances} onClose={() => setShowAnalytics(false)} />
+          {showAnalytics && (
+            <Analytics
+              expenses={expenses}
+              balances={balances}
+              onClose={() => setShowAnalytics(false)}
+            />
+          )}
+        </>
       )}
     </div>
   );

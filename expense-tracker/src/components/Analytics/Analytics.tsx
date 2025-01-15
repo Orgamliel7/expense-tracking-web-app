@@ -1,7 +1,7 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { CategoryBalance, Expense, COLORS, INITIAL_BALANCE } from './types';
-import './Analytics.css';
+import { CategoryBalance, Expense, COLORS, INITIAL_BALANCE } from '../../types';
+import './styles.css';
 
 interface AnalyticsProps {
   expenses: Expense[];

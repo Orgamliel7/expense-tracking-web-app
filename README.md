@@ -65,7 +65,7 @@ src/
 ## 💡 How to Use
 
 1. **Select a Category**: Choose a category from the available list (e.g., Groceries, Entertainment).
-2. **Enter Amount**: Input the amount of your expense.
+2. **הזן סכום**: Input the amount of your expense.
 3. **Optional Note**: Add a note (optional) to describe the expense.
 4. **Submit**: Click "הפחת הוצאה" to log your expense and see the balance update.
 5. **View Report**: Click "דו"ח הוצאות" to view a detailed list of all expenses.
