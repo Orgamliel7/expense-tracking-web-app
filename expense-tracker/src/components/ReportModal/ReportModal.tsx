@@ -51,7 +51,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
           <ul className="expense-list">
             {expenses.map((expense, index) => (
               <li key={index} className="expense-item">
-                {expense.date} - {expense.category} - ₪{expense.amount}
+                {new Date(expense.date).toLocaleDateString('en-GB')} - {expense.category} - ₪{expense.amount}
                 {expense.note && <span className="expense-note"> - הערה: {expense.note}</span>}
                 <button
                   onClick={() => handleDeleteExpense(index)}
