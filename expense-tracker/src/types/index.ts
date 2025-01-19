@@ -11,6 +11,7 @@ export interface CategoryBalance {
     amount: number;
     date: string;
     note?: string;
+    displayAmount: string; 
   }
   
   export const INITIAL_BALANCE: CategoryBalance = {

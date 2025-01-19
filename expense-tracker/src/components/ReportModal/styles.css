@@ -128,3 +128,30 @@
     padding: 8px 16px;
   }
 }
+
+.expense-amount {
+  font-family: "Segoe UI", sans-serif;
+  direction: ltr; /* Forces left-to-right display */
+  display: inline-block;
+  margin: 0 8px;
+}
+
+.expense-amount.negative {
+  color: #ff0000;
+  font-weight: bold;
+}
+
+.expense-item-details {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-grow: 1;
+}
+
+.expense-date {
+  min-width: 90px;
+}
+
+.expense-category {
+  min-width: 80px;
+}

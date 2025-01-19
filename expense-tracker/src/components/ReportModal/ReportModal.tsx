@@ -43,6 +43,11 @@ export const ReportModal: React.FC<ReportModalProps> = ({
     await updateExpenseData(restoredBalances, []);
   };
 
+  const formatAmount = (amount: number) => {
+    const absValue = Math.abs(amount);
+    return amount < 0 ? `-${absValue}₪` : `${absValue}₪`;
+  };
+
   return (
     <div className="report-modal">
       <h2>דו"ח הוצאות</h2>
@@ -51,8 +56,18 @@ export const ReportModal: React.FC<ReportModalProps> = ({
           <ul className="expense-list">
             {expenses.map((expense, index) => (
               <li key={index} className="expense-item">
-                {new Date(expense.date).toLocaleDateString('en-GB')} - {expense.category} - ₪{expense.amount}
-                {expense.note && <span className="expense-note"> - הערה: {expense.note}</span>}
+                <div className="expense-item-details">
+                  <span className="expense-date">
+                    {new Date(expense.date).toLocaleDateString('en-GB')}
+                  </span>
+                  <span className="expense-category">{expense.category}</span>
+                  <span className={`expense-amount ${expense.amount < 0 ? 'negative' : ''}`}>
+                    {formatAmount(expense.amount)}
+                  </span>
+                  {expense.note && (
+                    <span className="expense-note">הערה: {expense.note}</span>
+                  )}
+                </div>
                 <button
                   onClick={() => handleDeleteExpense(index)}
                   className="delete-expense-button"

@@ -82,6 +82,7 @@ function App() {
           amount,
           date: formattedDate,
           note: note.trim() || undefined,
+          displayAmount: ''
         };
 
         const updatedExpenses = [...expenses, newExpense];
