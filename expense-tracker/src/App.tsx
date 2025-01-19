@@ -68,7 +68,7 @@ function App() {
       await withLoading(async () => {
         const newBalances = {
           ...balances,
-          [selectedCategory]: Math.max(0, balances[selectedCategory] - amount),
+          [selectedCategory]: balances[selectedCategory] - amount,
         };
 
         const now = new Date();

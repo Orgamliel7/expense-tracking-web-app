@@ -155,3 +155,54 @@
 .expense-category {
   min-width: 80px;
 }
+
+.category-balance {
+  font-weight: bold;
+  font-size: 1.3em;
+  display: inline-block;
+}
+
+.negative-balance {
+  color: #ff0000;
+  font-weight: bold;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.progress-bar-bg {
+  height: 15px;
+  width: 100%;
+  background-color: #e0e0e0;
+  border-radius: 10px;
+  margin-top: 10px;
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+/* Update existing styles or add if missing */
+.balance-item {
+  margin: 20px 0;
+  padding: 15px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.1);
+  transition: background-color 0.3s ease;
+}
+
+.balance-item:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}

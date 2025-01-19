@@ -1,5 +1,5 @@
 import React from 'react';
-import { CategoryBalance, Expense } from '../../types';
+import { CategoryBalance, Expense, INITIAL_BALANCE } from '../../types';
 import './styles.css';
 
 interface ReportModalProps {
@@ -23,10 +23,13 @@ export const ReportModal: React.FC<ReportModalProps> = ({
     const expenseToDelete = expenses[index];
     const updatedBalances = {
       ...balances,
-      [expenseToDelete.category]: balances[expenseToDelete.category] + expenseToDelete.amount,
+      [expenseToDelete.category]: Math.min(
+        balances[expenseToDelete.category] + expenseToDelete.amount,
+        INITIAL_BALANCE[expenseToDelete.category] // This ensures the balance doesn't exceed the initial value
+      ),
     };
     const updatedExpenses = expenses.filter((_, i) => i !== index);
-
+  
     setBalances(updatedBalances);
     setExpenses(updatedExpenses);
     await updateExpenseData(updatedBalances, updatedExpenses);
@@ -34,10 +37,14 @@ export const ReportModal: React.FC<ReportModalProps> = ({
 
   const handleClearExpenses = async () => {
     const restoredBalances = expenses.reduce((acc, expense) => {
-      acc[expense.category] += expense.amount;
+      // Add the expense amount, but ensure the balance doesn't exceed the initial value
+      acc[expense.category] = Math.min(
+        acc[expense.category] + expense.amount,
+        INITIAL_BALANCE[expense.category] // This ensures the balance doesn't exceed the initial value
+      );
       return acc;
     }, { ...balances });
-
+  
     setBalances(restoredBalances);
     setExpenses([]);
     await updateExpenseData(restoredBalances, []);
