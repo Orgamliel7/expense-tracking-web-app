@@ -1,8 +1,14 @@
-.App {
+  html, 
+  body, 
+  #root, 
+  .App {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-width: 100%;
     background-color: #2E1A47;
-    min-height: 100vh;
-    padding: 20px;
   }
+
   
   .app-title {
     text-align: center;
@@ -74,16 +80,20 @@
   
   .progress-bar-bg {
     height: 15px;
-    width: 100%;
+    width: 100%; /* Full width by default */
+    max-width: 600px; /* Restrict maximum width */
     background-color: #e0e0e0;
     border-radius: 10px;
     margin-top: 10px;
-  }
-  
-  .progress-bar {
+    margin-left: auto; /* Center horizontally */
+    margin-right: auto; /* Center horizontally */
+}
+
+.progress-bar {
     height: 100%;
-    border-radius: 10px;
-  }
+    border-radius: 100px;
+    background-color: #4ECDC4; /* Add your progress bar color */
+}
   
   .reset-button {
     margin-top: 10px;

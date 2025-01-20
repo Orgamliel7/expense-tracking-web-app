@@ -10,6 +10,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useLoading } from './hooks/useLoading';
 import { CategoryBalance, Expense, INITIAL_BALANCE } from './types';
+import { JerusalemClock } from './components/JerusalemClock/JerusalemClock';
 import './styles.css';
 
 function App() {
@@ -111,6 +112,7 @@ function App() {
 
   return (
     <div className="App">
+      <JerusalemClock />
       <h1 className="app-title">מעקב הוצאות</h1>
 
       {isLoading ? (
