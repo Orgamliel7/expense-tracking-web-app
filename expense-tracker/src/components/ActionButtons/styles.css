@@ -23,3 +23,9 @@
   .excel-button:hover {
     background-color: #45a049;
   }
+
+  .past-reports-button {
+    background-color: #8A4FFF; 
+    color: white;
+  }
+  

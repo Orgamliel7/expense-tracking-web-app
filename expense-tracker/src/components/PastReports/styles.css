@@ -1,0 +1,93 @@
+.past-reports-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+  }
+  
+  .past-reports-content {
+    background-color: white;
+    border-radius: 8px;
+    padding: 30px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90%;
+    overflow-y: auto;
+  }
+  
+  .past-reports-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .past-reports-header h2 {
+    margin: 0;
+  }
+  
+  .close-btn {
+    background-color: transparent;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+  }
+  
+  .report-card {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .report-header h3 {
+    margin-top: 0;
+  }
+  
+  .past-reports-content .balance-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  
+  
+  .expenses-list {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  
+  .expense-item {
+    border-left-width: 4px;
+    border-left-style: solid;
+    padding-left: 12px;
+    margin-bottom: 12px;
+  }
+  
+  .expense-category {
+    font-weight: bold;
+  }
+  
+  .expense-amount {
+    text-align: right;
+  }
+  
+  .expense-note {
+    font-style: italic;
+  }
+  
+  .expense-date {
+    font-size: 12px;
+    color: #777;
+  }
+  
+  .no-reports {
+    text-align: center;
+    padding: 40px 0;
+  }
+  

@@ -8,12 +8,14 @@ interface ActionButtonsProps {
   expenses: Expense[];
   onShowReport: () => void;
   onShowAnalytics: () => void;
+  onShowPastReports: () => void;
 }
 
 export const ActionButtons: React.FC<ActionButtonsProps> = ({
   expenses,
   onShowReport,
   onShowAnalytics,
+  onShowPastReports,
 }) => {
   const handleDownloadExcel = () => {
     if (expenses.length === 0) {
@@ -35,6 +37,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       <button onClick={onShowAnalytics} className="report-button">
         אנליזות
       </button>
+      <button className="past-reports-button" onClick={onShowPastReports}>דו"חות עבר</button>
       <button onClick={handleDownloadExcel} className="excel-button">
         <FaFileExcel />
         Excel הורד כקובץ

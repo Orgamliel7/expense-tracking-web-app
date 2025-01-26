@@ -5,12 +5,14 @@ import { BalanceList } from './components/BalanceList/BalanceList';
 import { ReportModal } from './components/ReportModal/ReportModal';
 import { ActionButtons } from './components/ActionButtons/ActionButtons';
 import Analytics from "./components/Analytics/Analytics"
+import { PastReportsModal } from './components/PastReports/PastReports';
 import { db } from './services/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useLoading } from './hooks/useLoading';
-import { CategoryBalance, Expense, INITIAL_BALANCE } from './types';
+import { CategoryBalance, Expense, INITIAL_BALANCE, MonthlyReport } from './types';
 import { JerusalemClock } from './components/JerusalemClock/JerusalemClock';
+
 import './styles.css';
 
 function App() {
@@ -19,11 +21,12 @@ function App() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [showReport, setShowReport] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showPastReports, setShowPastReports] = useState(false);
+  const [pastReports, setPastReports] = useState<MonthlyReport[]>([]);
   
   const { isLoading, error, withLoading } = useLoading();
 
   const updateDataInFirestore = async (updatedBalances: CategoryBalance, updatedExpenses: Expense[]) => {
-    // Sanitize data: replace undefined values with defaults
     const sanitizedBalances = Object.fromEntries(
       Object.entries(updatedBalances).map(([key, value]) => [key, value ?? 0])
     );
@@ -49,19 +52,83 @@ function App() {
     }
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const docRef = doc(db, 'balances', 'expenseData');
-      const docSnap = await getDoc(docRef);
+  const createInitialPastReport = async () => {
+    if (pastReports.length === 0 && expenses.length > 0) {
+      const now = new Date();
+      const monthYear = now.toLocaleString('he-IL', { month: 'long', year: 'numeric' });
+      
+      const initialMonthlyReport: MonthlyReport = {
+        month: monthYear,
+        balances: { ...balances },
+        expenses: [...expenses],
+      };
 
+      const docRef = doc(db, 'balances', 'pastReports');
+      const updatedPastReports = [initialMonthlyReport];
+      
+      try {
+        await setDoc(docRef, { reports: updatedPastReports });
+        setPastReports(updatedPastReports);
+      } catch (error) {
+        console.error('Error creating initial past report:', error);
+      }
+    }
+  };
+
+  const checkMonthlyReset = async () => {
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    if (today.getTime() === firstDayOfMonth.getTime()) {
+      const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const monthYear = previousMonth.toLocaleString('he-IL', { month: 'long', year: 'numeric' });
+      
+      const monthlyReport: MonthlyReport = {
+        month: monthYear,
+        balances: { ...balances },
+        expenses: [...expenses],
+      };
+
+      const docRef = doc(db, 'balances', 'pastReports');
+      const updatedPastReports = [...pastReports, monthlyReport];
+      await setDoc(docRef, { reports: updatedPastReports });
+      setPastReports(updatedPastReports);
+
+      setBalances(INITIAL_BALANCE);
+      setExpenses([]);
+      await updateDataInFirestore(INITIAL_BALANCE, []);
+    }
+  };
+
+  useEffect(() => {
+    const fetchPastReports = async () => {
+      const docRef = doc(db, 'balances', 'pastReports');
+      const docSnap = await getDoc(docRef);
+      
       if (docSnap.exists()) {
         const data = docSnap.data();
-        if (data.balances) setBalances(data.balances as CategoryBalance);
-        if (data.expenses) setExpenses(data.expenses as Expense[]);
+        if (data.reports) {
+          setPastReports(data.reports as MonthlyReport[]);
+        }
       }
     };
 
-    withLoading(fetchData);
+    const initializeApp = async () => {
+      await fetchPastReports();
+      const mainDocRef = doc(db, 'balances', 'expenseData');
+      const mainDocSnap = await getDoc(mainDocRef);
+
+      if (mainDocSnap.exists()) {
+        const data = mainDocSnap.data();
+        if (data.balances) setBalances(data.balances as CategoryBalance);
+        if (data.expenses) setExpenses(data.expenses as Expense[]);
+        
+        await createInitialPastReport();
+      }
+    };
+
+    withLoading(initializeApp);
   }, []);
 
   const handleExpenseSubmit = async (amount: number, note: string) => {
@@ -99,6 +166,7 @@ function App() {
   const handleEscape = () => {
     setShowReport(false);
     setShowAnalytics(false);
+    setShowPastReports(false);
     setSelectedCategory(null);
   };
 
@@ -141,6 +209,7 @@ function App() {
             expenses={expenses}
             onShowReport={() => setShowReport(true)}
             onShowAnalytics={() => setShowAnalytics(true)}
+            onShowPastReports={() => setShowPastReports(true)}  
           />
 
           {showReport && (
@@ -151,6 +220,13 @@ function App() {
               setExpenses={setExpenses}
               onClose={() => setShowReport(false)}
               updateExpenseData={updateDataInFirestore}
+            />
+          )}
+
+          {showPastReports && (
+            <PastReportsModal
+              reports={pastReports}
+              onClose={() => setShowPastReports(false)}
             />
           )}
 

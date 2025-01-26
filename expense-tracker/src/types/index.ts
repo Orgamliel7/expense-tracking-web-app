@@ -29,3 +29,9 @@ export interface CategoryBalance {
     בילויים: '#FFD700',
     בגדים: '#FF8C00',
   };
+
+  export type MonthlyReport = {
+    month: string;
+    balances: CategoryBalance;
+    expenses: Expense[];
+  };
