@@ -32,13 +32,6 @@
     margin: 0;
   }
   
-  .close-btn {
-    background-color: transparent;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-  }
-  
   .report-card {
     border: 1px solid #ccc;
     border-radius: 4px;
@@ -91,3 +84,27 @@
     padding: 40px 0;
   }
   
+
+  .close-btn {
+    background-color: #4CAF50; /* Adjusted to green, or use the same color as the submit button */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background-color 0.3s;
+  }
+  
+  .close-btn:hover {
+    background-color: #45a049; /* Hover effect */
+  }
+  
+  .close-btn:disabled {
+    background-color: #ddd; /* Disabled state */
+    cursor: not-allowed;
+  }
+  
+  .close-btn:focus {
+    outline: none; /* Remove outline on focus if needed */
+  }
