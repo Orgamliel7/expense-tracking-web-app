@@ -13,6 +13,7 @@ import { useLoading } from './hooks/useLoading';
 import { CategoryBalance, Expense, INITIAL_BALANCE, MonthlyReport } from './types';
 import { JerusalemClock } from './components/JerusalemClock/JerusalemClock';
 
+
 import './styles.css';
 
 function App() {
@@ -114,6 +115,13 @@ function App() {
       }
     };
 
+    // useEffect(() => {
+    //   checkMonthlyReset();
+    //   // check daily which month is it
+    //   const interval = setInterval(checkMonthlyReset, 24 * 60 * 60 * 1000);
+    //   return () => clearInterval(interval);
+    // }, []);
+
     const initializeApp = async () => {
       await fetchPastReports();
       const mainDocRef = doc(db, 'balances', 'expenseData');
@@ -212,20 +220,20 @@ function App() {
             onShowPastReports={() => setShowPastReports(true)}  
           />
 
-          {showReport && (
-            <ReportModal
-              expenses={expenses}
-              balances={balances}
-              setBalances={setBalances}
-              setExpenses={setExpenses}
-              onClose={() => setShowReport(false)}
-              updateExpenseData={updateDataInFirestore}
-            />
-          )}
-
           {showPastReports && (
             <PastReportsModal
-              reports={pastReports}
+              // Filter out current month from pastReports before passing
+              pastReports={pastReports.filter(report => {
+                const currentMonthStr = new Date().toLocaleString('he-IL', { 
+                  month: 'long', 
+                  year: 'numeric' 
+                });
+                return report.month !== currentMonthStr;
+              })}
+              currentMonth={{
+                expenses: expenses,
+                balances: balances
+              }}
               onClose={() => setShowPastReports(false)}
             />
           )}

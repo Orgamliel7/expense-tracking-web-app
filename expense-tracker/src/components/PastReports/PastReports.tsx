@@ -1,26 +1,52 @@
 import React, { useState } from 'react';
-import { MonthlyReport, COLORS } from '../../types';
+import { MonthlyReport, COLORS, CategoryBalance } from '../../types';
 import './styles.css';
 
 interface PastReportsModalProps {
-  reports: MonthlyReport[];
+  pastReports: MonthlyReport[];
+  currentMonth: {
+    expenses: Array<{
+      category: string;
+      amount: number;
+      note?: string;
+      date: string;
+    }>;
+    balances: CategoryBalance;  // Changed from Record<string, number> to CategoryBalance
+  };
   onClose: () => void;
 }
 
-export const PastReportsModal: React.FC<PastReportsModalProps> = ({ reports, onClose }) => {
+export const PastReportsModal: React.FC<PastReportsModalProps> = ({ 
+  pastReports, 
+  currentMonth, 
+  onClose 
+}) => {
   const [expandedReports, setExpandedReports] = useState<Set<string>>(new Set());
-
+  
   const formatAmount = (amount: number) => `₪${Math.abs(amount).toLocaleString()}`;
+  
+  const currentMonthStr = new Date().toLocaleString('he-IL', { 
+    month: 'long', 
+    year: 'numeric' 
+  });
+
+  const allReports = [
+    {
+      month: currentMonthStr,
+      ...currentMonth
+    },
+    ...pastReports
+  ];
 
   const toggleReport = (month: string) => {
-    setExpandedReports((prevExpanded) => {
-      const newExpanded = new Set(prevExpanded);
-      if (newExpanded.has(month)) {
-        newExpanded.delete(month);
+    setExpandedReports(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(month)) {
+        newSet.delete(month);
       } else {
-        newExpanded.add(month);
+        newSet.add(month);
       }
-      return newExpanded;
+      return newSet;
     });
   };
 
@@ -33,19 +59,26 @@ export const PastReportsModal: React.FC<PastReportsModalProps> = ({ reports, onC
         </div>
         
         <div className="past-reports-list">
-          {reports.length === 0 ? (
+          {allReports.length === 0 ? (
             <div className="no-reports">
               <p>אין דו"חות קודמים</p>
               <p>ההוצאות שלך יופיעו כאן בסוף כל חודש</p>
             </div>
           ) : (
-            reports.map((report) => (
+            allReports.map((report, index) => (
               <div key={report.month} className="report-card">
-                <div
-                  className={`report-header ${expandedReports.has(report.month) ? 'expanded' : ''}`}
+                <div 
+                  className={`report-header ${
+                    expandedReports.has(report.month) ? 'expanded' : ''
+                  } ${index === 0 ? 'current-month' : ''}`}
                   onClick={() => toggleReport(report.month)}
                 >
-                  <h3>{report.month}</h3>
+                  <h3>
+                    {report.month}
+                    {index === 0 && (
+                      <span className="current-tag">חודש נוכחי</span>
+                    )}
+                  </h3>
                   <span className="toggle-icon">
                     {expandedReports.has(report.month) ? '▲' : '▼'}
                   </span>
@@ -76,22 +109,28 @@ export const PastReportsModal: React.FC<PastReportsModalProps> = ({ reports, onC
                         <p>לא בוצעו הוצאות החודש</p>
                       ) : (
                         <div className="expenses-list">
-                          {report.expenses.map((expense, expIndex) => (
+                          {report.expenses.map((expense, idx) => (
                             <div 
-                              key={expIndex} 
+                              key={`${report.month}-${idx}`}
                               className="expense-item"
                               style={{ 
                                 borderLeft: `4px solid ${COLORS[expense.category as keyof typeof COLORS]}` 
                               }}
                             >
-                              <div className="expense-category">{expense.category}</div>
-                              <div className="expense-amount">{formatAmount(expense.amount)}</div>
+                              <div className="expense-category">
+                                {expense.category}
+                              </div>
+                              <div className="expense-amount">
+                                {formatAmount(expense.amount)}
+                              </div>
                               {expense.note && (
                                 <div className="expense-note">
                                   <i>{expense.note}</i>
                                 </div>
                               )}
-                              <div className="expense-date">{expense.date}</div>
+                              <div className="expense-date">
+                                {expense.date}
+                              </div>
                             </div>
                           ))}
                         </div>
