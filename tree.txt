@@ -1,0 +1,44 @@
+expense-tracker\
+├── firebase.json
+├── index.html
+└── src\
+    ├── App.tsx
+    ├── index.css
+    ├── main.tsx
+    ├── styles.css
+    ├── components\
+    │   ├── ActionButtons\
+    │   │   ├── ActionButtons.tsx
+    │   │   └── styles.css
+    │   ├── Analytics\
+    │   │   ├── Analytics.tsx
+    │   │   └── styles.css
+    │   ├── BalanceItem\
+    │   │   └── BalanceItem.tsx
+    │   ├── BalanceList\
+    │   │   ├── BalanceList.tsx
+    │   │   └── styles.css
+    │   ├── CategoryButtons\
+    │   │   └── CategoryButtons.tsx
+    │   │   └── styles.css
+    │   ├── ExpenseForm\
+    │   │   ├── ExpenseForm.tsx
+    │   │   └── styles.css
+    │   ├── JerusalemClock\
+    │   │   ├── JerusalemClock.jsx
+    │   │   └── style.css
+    │   ├── PastReports\
+    │   │   ├── PastReports.tsx
+    │   │   └── styles.css
+    │   └── ReportModal\
+    │       ├── ReportModal.tsx
+    │       └── styles.css
+    ├── services\
+    │   └── firebase.js
+    ├── types\
+    │   └── index.ts
+    └── hooks\
+        ├── useKeyboardShortcuts.ts
+        └── useLoading.ts
+    
+    
