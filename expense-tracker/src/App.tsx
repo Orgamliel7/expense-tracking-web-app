@@ -238,6 +238,17 @@ function App() {
             />
           )}
 
+          {showReport && (
+            <ReportModal
+              expenses={expenses}
+              balances={balances}
+              setBalances={setBalances}
+              setExpenses={setExpenses}
+              onClose={() => setShowReport(false)}
+              updateExpenseData={updateDataInFirestore}
+            />
+          )}
+
           {showAnalytics && (
             <Analytics
               expenses={expenses}
