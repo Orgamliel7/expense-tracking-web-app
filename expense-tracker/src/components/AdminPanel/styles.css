@@ -1,0 +1,156 @@
+.admin-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #9b1c1c;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .admin-button:hover {
+    background-color: #801212;
+    transform: translateY(-2px);
+  }
+  
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
+    position: relative;
+  }
+  
+  .close-button {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    background: #e53e3e;
+    border-color: #c53030;
+    color: white;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+  }
+  
+  
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .modal-content {
+    background-color: white;
+    border-radius: 12px;
+    padding: 20px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #2d3748;
+  }
+  
+  .button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .action-button {
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+  
+  .action-button.check {
+    background-color: #4299e1;
+    color: white;
+  }
+  
+  .action-button.reset {
+    background-color: #f56565;
+    color: white;
+  }
+  
+  .action-button.update {
+    background-color: #48bb78;
+    color: white;
+  }
+  
+  .action-button:hover {
+    filter: brightness(110%);
+    transform: translateY(-1px);
+  }
+  
+  .message {
+    margin-top: 20px;
+    padding: 10px;
+    border-radius: 6px;
+    background-color: #f7fafc;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .confirm-dialog {
+    text-align: center;
+    padding: 20px;
+  }
+  
+  .confirm-dialog p {
+    color: #e53e3e;
+    margin-bottom: 20px;
+    font-weight: 500;
+  }
+  
+  .confirm-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+  
+  .confirm-yes {
+    background-color: #e53e3e;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .confirm-no {
+    background-color: #718096;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .confirm-yes:hover, .confirm-no:hover {
+    filter: brightness(110%);
+  }
+
+  .action-button.refresh {
+    background-color: #9f7aea;
+    color: white;
+  }

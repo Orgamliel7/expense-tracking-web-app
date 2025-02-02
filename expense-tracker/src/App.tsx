@@ -12,6 +12,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useLoading } from './hooks/useLoading';
 import { CategoryBalance, Expense, INITIAL_BALANCE, MonthlyReport } from './types';
 import { JerusalemClock } from './components/JerusalemClock/JerusalemClock';
+import AdminPanel from './components/AdminPanel/AdminPanel';
 
 
 import './styles.css';
@@ -114,13 +115,6 @@ function App() {
         }
       }
     };
-
-    // useEffect(() => {
-    //   checkMonthlyReset();
-    //   // check daily which month is it
-    //   const interval = setInterval(checkMonthlyReset, 24 * 60 * 60 * 1000);
-    //   return () => clearInterval(interval);
-    // }, []);
 
     const initializeApp = async () => {
       await fetchPastReports();
@@ -258,6 +252,7 @@ function App() {
           )}
         </>
       )}
+      <AdminPanel />
     </div>
   );
 }
