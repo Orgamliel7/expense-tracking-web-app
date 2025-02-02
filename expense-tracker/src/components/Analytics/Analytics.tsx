@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { CategoryBalance, Expense, COLORS, INITIAL_BALANCE } from '../../types';
 import './styles.css';
@@ -12,6 +12,13 @@ interface AnalyticsProps {
 interface MonthlyData {
   month: string;
   saved: number;
+  totalSpent: number;
+  categorySpending: {
+    [key: string]: {
+      spent: number;
+      percentage: number;
+    };
+  };
 }
 
 interface FutureMonthlyData extends MonthlyData {
@@ -19,94 +26,75 @@ interface FutureMonthlyData extends MonthlyData {
 }
 
 const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose }) => {
-  // Calculate monthly savings
-  const calculateMonthlySavings = (): MonthlyData[] => {
-    // Calculate total initial budget
+  // Calculate monthly data with categories
+  const calculateMonthlyData = useMemo((): Record<string, MonthlyData> => {
     const totalInitialBudget = Object.values(INITIAL_BALANCE).reduce((a, b) => a + b, 0);
+    const monthlyData: Record<string, MonthlyData> = {};
 
-    // Group expenses by month
-    const monthlyExpenses = expenses.reduce((acc, expense) => {
-      const date = new Date(expense.date);
-      
-      if (isNaN(date.getTime())) {
-        console.warn(`Invalid date: ${expense.date}`);
-        return acc;
-      }
-
-      // Create month key in MM/YYYY format
-      const monthKey = `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
-      
-      if (!acc[monthKey]) {
-        acc[monthKey] = {
-          total: 0,
-          month: monthKey
-        };
-      }
-      
-      acc[monthKey].total += expense.amount;
-      return acc;
-    }, {} as Record<string, { total: number; month: string }>);
-
-    // Convert to array and calculate savings
-    const savings = Object.values(monthlyExpenses)
-      .map(({ month, total }) => ({
-        month: month,
-        saved: totalInitialBudget - total
-      }))
-      .sort((a, b) => {
-        // Sort by date
-        const [aMonth, aYear] = a.month.split('/');
-        const [bMonth, bYear] = b.month.split('/');
-        const dateA = new Date(parseInt(aYear), parseInt(aMonth) - 1);
-        const dateB = new Date(parseInt(bYear), parseInt(bMonth) - 1);
-        return dateB.getTime() - dateA.getTime(); // Reverse chronological order
-      });
-
-    // Add current month if it's not in the list
+    // Initialize current month
     const today = new Date();
     const currentMonthKey = `${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
     
-    if (!savings.find(s => s.month === currentMonthKey)) {
-      savings.unshift({
-        month: currentMonthKey,
-        saved: totalInitialBudget // For current month, start with full budget if no expenses
+    // Process all expenses
+    expenses.forEach(expense => {
+      const date = new Date(expense.date);
+      if (isNaN(date.getTime())) {
+        console.warn(`Invalid date: ${expense.date}`);
+        return;
+      }
+
+      const monthKey = `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+      
+      if (!monthlyData[monthKey]) {
+        monthlyData[monthKey] = {
+          month: monthKey,
+          saved: totalInitialBudget,
+          totalSpent: 0,
+          categorySpending: Object.keys(INITIAL_BALANCE).reduce((acc, category) => ({
+            ...acc,
+            [category]: { spent: 0, percentage: 0 }
+          }), {})
+        };
+      }
+
+      monthlyData[monthKey].totalSpent += expense.amount;
+      monthlyData[monthKey].saved = totalInitialBudget - monthlyData[monthKey].totalSpent;
+      
+      // Update category spending
+      if (monthlyData[monthKey].categorySpending[expense.category]) {
+        monthlyData[monthKey].categorySpending[expense.category].spent += expense.amount;
+      }
+    });
+
+    // Calculate percentages for each month
+    Object.values(monthlyData).forEach(monthData => {
+      Object.keys(monthData.categorySpending).forEach(category => {
+        monthData.categorySpending[category].percentage = 
+          monthData.totalSpent > 0 
+            ? (monthData.categorySpending[category].spent / monthData.totalSpent) * 100 
+            : 0;
       });
+    });
+
+    // Ensure current month exists
+    if (!monthlyData[currentMonthKey]) {
+      monthlyData[currentMonthKey] = {
+        month: currentMonthKey,
+        saved: totalInitialBudget,
+        totalSpent: 0,
+        categorySpending: Object.keys(INITIAL_BALANCE).reduce((acc, category) => ({
+          ...acc,
+          [category]: { spent: 0, percentage: 0 }
+        }), {})
+      };
     }
 
-    // Format month display as MM/YY
-    return savings.map(item => ({
-      month: item.month.replace(/(\d{2})\/(\d{4})/, '$1/' + item.month.slice(-2)),
-      saved: item.saved
-    }));
-  };
-
-  // Calculate spending by category
-  const calculateCategorySpending = () => {
-    const totalSpent = Object.values(balances).reduce(
-      (acc, current, index) => {
-        const category = Object.keys(INITIAL_BALANCE)[index];
-        const initialAmount = INITIAL_BALANCE[category as keyof CategoryBalance];
-        const spent = initialAmount - current;
-        return acc + spent;
-      },
-      0
-    );
-
-    return Object.entries(balances).map(([category, balance]) => {
-      const initialAmount = INITIAL_BALANCE[category as keyof CategoryBalance];
-      const spent = initialAmount - balance;
-      return {
-        name: category,
-        value: totalSpent > 0 ? (spent / totalSpent) * 100 : 0,
-        amount: spent,
-      };
-    });
-  };
+    return monthlyData;
+  }, [expenses]);
 
   const generateFutureMonths = (): FutureMonthlyData[] => {
     const today = new Date();
     const futureMonths: FutureMonthlyData[] = [];
-    
     const futureCount = 6;
 
     for (let i = 1; i <= futureCount; i++) {
@@ -115,15 +103,43 @@ const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose }) =>
       futureMonths.push({
         month: monthKey,
         saved: 0,
-        future: 1, // Indicate this is a future placeholder
+        totalSpent: 0,
+        categorySpending: {},
+        future: 1
       });
     }
 
     return futureMonths;
   };
 
-  const monthlySavings = calculateMonthlySavings();
-  const categorySpending = calculateCategorySpending();
+  // Convert monthly data to array and sort
+  const monthlySavings = useMemo(() => {
+    return Object.values(calculateMonthlyData)
+      .map(data => ({
+        month: data.month.replace(/(\d{2})\/(\d{4})/, '$1/' + data.month.slice(-2)),
+        saved: data.saved
+      }))
+      .sort((a, b) => {
+        const [aMonth, aYear] = a.month.split('/');
+        const [bMonth, bYear] = b.month.split('/');
+        const dateA = new Date(parseInt('20' + aYear), parseInt(aMonth) - 1);
+        const dateB = new Date(parseInt('20' + bYear), parseInt(bMonth) - 1);
+        return dateB.getTime() - dateA.getTime();
+      });
+  }, [calculateMonthlyData]);
+
+  // Get current month's category spending for pie chart
+  const currentMonthKey = `${String(new Date().getMonth() + 1).padStart(2, '0')}/${new Date().getFullYear()}`;
+  const categorySpending = useMemo(() => {
+    const currentMonthData = calculateMonthlyData[currentMonthKey];
+    if (!currentMonthData) return [];
+
+    return Object.entries(currentMonthData.categorySpending).map(([category, data]) => ({
+      name: category,
+      value: data.percentage,
+      amount: data.spent
+    }));
+  }, [calculateMonthlyData, currentMonthKey]);
 
   return (
     <div className="analytics-modal">
@@ -143,12 +159,12 @@ const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose }) =>
                 dataKey="saved" 
                 fill="#82ca9d" 
                 name="חסכון חודשי" 
-                barSize={15} // Make bars thinner
+                barSize={15}
                 radius={[10, 10, 0, 0]} 
               />
               <Bar 
                 dataKey="future" 
-                fill="lightgray" // Shallow gray for future months
+                fill="lightgray"
                 name="חודשים עתידיים" 
                 barSize={15} 
                 radius={[10, 10, 0, 0]} 
