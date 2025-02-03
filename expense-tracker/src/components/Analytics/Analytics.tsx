@@ -117,7 +117,8 @@ const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose }) =>
     return Object.values(calculateMonthlyData)
       .map(data => ({
         month: data.month.replace(/(\d{2})\/(\d{4})/, '$1/' + data.month.slice(-2)),
-        saved: data.saved
+        saved: data.saved,
+        totalSpent: data.totalSpent
       }))
       .sort((a, b) => {
         const [aMonth, aYear] = a.month.split('/');
@@ -158,7 +159,14 @@ const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose }) =>
               <Bar 
                 dataKey="saved" 
                 fill="#82ca9d" 
-                name="חסכון חודשי" 
+                name="חסכון" 
+                barSize={15}
+                radius={[10, 10, 0, 0]} 
+              />
+              <Bar 
+                dataKey="totalSpent" 
+                fill="#f56565" 
+                name="הוצאות" 
                 barSize={15}
                 radius={[10, 10, 0, 0]} 
               />
