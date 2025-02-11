@@ -58,7 +58,7 @@ export const PastReportsModal: React.FC<PastReportsModalProps> = ({
           <button onClick={onClose} className="close-btn">×</button>
         </div>
         
-        <div className="past-reports-list">
+        <div className="past-reports-list"> 
           {allReports.length === 0 ? (
             <div className="no-reports">
               <p>אין דו"חות קודמים</p>

@@ -55,6 +55,14 @@ export const ReportModal: React.FC<ReportModalProps> = ({
     return amount < 0 ? `-${absValue}₪` : `${absValue}₪`;
   };
 
+  const formatDate = (date: string | number | Date) => {
+    const d = new Date(date);
+    const day = d.getDate().toString().padStart(2, '0');
+    const month = (d.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-based
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   return (
     <div className="report-modal">
       <h2>דו"ח הוצאות</h2>
@@ -74,6 +82,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
                   {expense.note && (
                     <span className="expense-note">הערה: {expense.note}</span>
                   )}
+                  <span className="expense-date">{formatDate(expense.date)}</span>
                 </div>
                 <button
                   onClick={() => handleDeleteExpense(index)}
