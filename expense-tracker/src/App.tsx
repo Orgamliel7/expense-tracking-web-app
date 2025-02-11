@@ -13,8 +13,7 @@ import { useLoading } from './hooks/useLoading';
 import { CategoryBalance, Expense, INITIAL_BALANCE, MonthlyReport } from './types';
 import { JerusalemClock } from './components/JerusalemClock/JerusalemClock';
 import AdminPanel from './components/AdminPanel/AdminPanel';
-
-
+import { ExpenseUploader } from './components/ExpenseUploader/ExpenseUploader';
 import './styles.css';
 
 function App() {
@@ -125,7 +124,7 @@ function App() {
         const data = mainDocSnap.data();
         if (data.balances) setBalances(data.balances as CategoryBalance);
         if (data.expenses) setExpenses(data.expenses as Expense[]);
-        
+
         await createInitialPastReport();
       }
     };
@@ -195,6 +194,19 @@ function App() {
             onCategorySelect={setSelectedCategory}
           />
 
+          <div className="excel-import-container">
+            <ExpenseUploader
+              expenses={expenses}
+              balances={balances}
+              setBalances={setBalances}
+              setExpenses={setExpenses}
+              updateExpenseData={updateDataInFirestore}
+            />
+            <label className="excel-import-label" htmlFor="file-upload">
+              יבא הוצאות מקובץ אקסל
+            </label>
+          </div>
+
           <ExpenseForm
             selectedCategory={selectedCategory}
             onSubmit={handleExpenseSubmit}
@@ -242,7 +254,6 @@ function App() {
               updateExpenseData={updateDataInFirestore}
             />
           )}
-
           {showAnalytics && (
             <Analytics
               expenses={expenses}

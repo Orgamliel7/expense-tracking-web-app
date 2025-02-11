@@ -1,5 +1,5 @@
 import React from 'react';
-import { CategoryBalance, Expense, INITIAL_BALANCE } from '../../types';
+import { CategoryBalance, Expense } from '../../types';
 import './styles.css';
 
 interface ReportModalProps {
@@ -19,17 +19,14 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   onClose,
   updateExpenseData,
 }) => {
-  const handleDeleteExpense = async (index: number) => {
-    const expenseToDelete = expenses[index];
+  const handleDeleteExpense = async (expenseToDelete: Expense) => {
     const updatedBalances = {
       ...balances,
-      [expenseToDelete.category]: Math.min(
-        balances[expenseToDelete.category] + expenseToDelete.amount,
-        INITIAL_BALANCE[expenseToDelete.category] // This ensures the balance doesn't exceed the initial value
-      ),
+      [expenseToDelete.category]: balances[expenseToDelete.category] - expenseToDelete.amount // Subtract negative amount (which adds it back)
     };
-    const updatedExpenses = expenses.filter((_, i) => i !== index);
-  
+
+    const updatedExpenses = expenses.filter((expense) => expense !== expenseToDelete);
+    
     setBalances(updatedBalances);
     setExpenses(updatedExpenses);
     await updateExpenseData(updatedBalances, updatedExpenses);
@@ -37,14 +34,11 @@ export const ReportModal: React.FC<ReportModalProps> = ({
 
   const handleClearExpenses = async () => {
     const restoredBalances = expenses.reduce((acc, expense) => {
-      // Add the expense amount, but ensure the balance doesn't exceed the initial value
-      acc[expense.category] = Math.min(
-        acc[expense.category] + expense.amount,
-        INITIAL_BALANCE[expense.category] // This ensures the balance doesn't exceed the initial value
-      );
+      // Subtract the negative amount (which adds it back)
+      acc[expense.category] = acc[expense.category] - expense.amount;
       return acc;
     }, { ...balances });
-  
+    
     setBalances(restoredBalances);
     setExpenses([]);
     await updateExpenseData(restoredBalances, []);
@@ -52,44 +46,69 @@ export const ReportModal: React.FC<ReportModalProps> = ({
 
   const formatAmount = (amount: number) => {
     const absValue = Math.abs(amount);
-    return amount < 0 ? `-${absValue}₪` : `${absValue}₪`;
+    return `${absValue.toLocaleString('he-IL')}₪`;  // Fixed string interpolation
   };
 
   const formatDate = (date: string | number | Date) => {
-    const d = new Date(date);
-    const day = d.getDate().toString().padStart(2, '0');
-    const month = (d.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-based
-    const year = d.getFullYear();
-    return `${day}/${month}/${year}`;
+    try {
+      const d = new Date(date);
+      if (isNaN(d.getTime())) {
+        throw new Error('Invalid date');
+      }
+      const day = d.getDate().toString().padStart(2, '0');
+      const month = (d.getMonth() + 1).toString().padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;  // Fixed string interpolation
+    } catch (e) {
+      console.error('Date formatting error:', e);
+      return String(date);
+    }
   };
+
+  const groupExpensesByDate = (expenses: Expense[]) => {
+    return expenses.reduce((groups, expense) => {
+      const date = formatDate(expense.date);
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(expense);
+      return groups;
+    }, {} as Record<string, Expense[]>);
+  };
+
+  const sortedExpenses = [...expenses].sort((a, b) => 
+    new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+
+  const groupedExpenses = groupExpensesByDate(sortedExpenses);
 
   return (
     <div className="report-modal">
       <h2>דו"ח הוצאות</h2>
-      {expenses.length > 0 ? (
+      {sortedExpenses.length > 0 ? (
         <>
           <ul className="expense-list">
-            {expenses.map((expense, index) => (
-              <li key={index} className="expense-item">
-                <div className="expense-item-details">
-                  <span className="expense-date">
-                    {new Date(expense.date).toLocaleDateString('en-GB')}
-                  </span>
-                  <span className="expense-category">{expense.category}</span>
-                  <span className={`expense-amount ${expense.amount < 0 ? 'negative' : ''}`}>
-                    {formatAmount(expense.amount)}
-                  </span>
-                  {expense.note && (
-                    <span className="expense-note">הערה: {expense.note}</span>
-                  )}
-                  <span className="expense-date">{formatDate(expense.date)}</span>
-                </div>
-                <button
-                  onClick={() => handleDeleteExpense(index)}
-                  className="delete-expense-button"
-                >
-                  &times;
-                </button>
+            {Object.entries(groupedExpenses).map(([date, dateExpenses]) => (
+              <li key={date} className="date-group">
+                <div className="date-header">{date}</div>
+                {dateExpenses.map((expense, index) => (
+                  <div key={`${date}-${index}`} className="expense-item">
+                    <div className="expense-item-details">
+                      <span className="expense-category">{expense.category}</span>
+                      <span className="expense-amount negative">{formatAmount(expense.amount)}</span>
+                      {expense.note && (
+                        <span className="expense-note">הערה: {expense.note}</span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleDeleteExpense(expense)} 
+                      className="delete-expense-button"
+                      aria-label="מחק הוצאה"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))}
               </li>
             ))}
           </ul>

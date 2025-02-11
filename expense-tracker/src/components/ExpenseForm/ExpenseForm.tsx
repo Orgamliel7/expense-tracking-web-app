@@ -41,4 +41,4 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ selectedCategory, onSu
       </button>
     </form>
   );
-};
+};  
