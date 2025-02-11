@@ -20,27 +20,37 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   updateExpenseData,
 }) => {
   const handleDeleteExpense = async (expenseToDelete: Expense) => {
+    // Correct the balance by adding back the amount (because we're removing the expense)
     const updatedBalances = {
       ...balances,
-      [expenseToDelete.category]: balances[expenseToDelete.category] - expenseToDelete.amount // Subtract negative amount (which adds it back)
+      [expenseToDelete.category]: balances[expenseToDelete.category] + expenseToDelete.amount,  // Add the amount back to the balance
     };
-
+  
+    // Remove the expense from the expenses array
     const updatedExpenses = expenses.filter((expense) => expense !== expenseToDelete);
     
+    // Update the state with new balances and expenses
     setBalances(updatedBalances);
     setExpenses(updatedExpenses);
+  
+    // Update the backend with the new state
     await updateExpenseData(updatedBalances, updatedExpenses);
   };
 
   const handleClearExpenses = async () => {
-    const restoredBalances = expenses.reduce((acc, expense) => {
-      // Subtract the negative amount (which adds it back)
-      acc[expense.category] = acc[expense.category] - expense.amount;
-      return acc;
-    }, { ...balances });
-    
+    // Create a copy of the current balances to avoid direct mutations
+    const restoredBalances = { ...balances };
+  
+    // Add back the amounts of cleared expenses to their corresponding categories
+    expenses.forEach((expense) => {
+      restoredBalances[expense.category] += expense.amount; // Add the amount back to the balance
+    });
+  
+    // Update the states with the restored balances and clear the expenses list
     setBalances(restoredBalances);
-    setExpenses([]);
+    setExpenses([]); // Clear the list of expenses
+  
+    // Update the backend data accordingly
     await updateExpenseData(restoredBalances, []);
   };
 
