@@ -9,6 +9,7 @@ interface ActionButtonsProps {
   onShowReport: () => void;
   onShowAnalytics: () => void;
   onShowPastReports: () => void;
+  onShowSmallCash: () => void; // Added prop to handle the small cash button click
 }
 
 export const ActionButtons: React.FC<ActionButtonsProps> = ({
@@ -16,6 +17,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   onShowReport,
   onShowAnalytics,
   onShowPastReports,
+  onShowSmallCash, // Destructure the handler
 }) => {
   const handleDownloadExcel = () => {
     if (expenses.length === 0) {
@@ -37,10 +39,15 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       <button onClick={onShowAnalytics} className="report-button">
         אנליזות
       </button>
-      <button className="past-reports-button" onClick={onShowPastReports}>דו"חות עבר</button>
+      <button className="past-reports-button" onClick={onShowPastReports}>
+        דו"חות עבר
+      </button>
       <button onClick={handleDownloadExcel} className="excel-button">
         <FaFileExcel />
         Excel הורד כקובץ
+      </button>
+      <button onClick={onShowSmallCash} className="small-cash-button">
+        קופה קטנה
       </button>
     </div>
   );

@@ -36,3 +36,24 @@
 .past-reports-button:disabled {
   background-color: #d4d4d4;
 }
+
+.small-cash-button {
+  background-color: #40E0D0; /* Turquoise color */
+  color: white;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 20px; /* Match the border radius of other buttons */
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.small-cash-button:hover {
+  background-color: #48C9B0; /* Slightly darker turquoise */
+  opacity: 0.9;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}

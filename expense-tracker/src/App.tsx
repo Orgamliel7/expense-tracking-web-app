@@ -3,8 +3,7 @@ import { CategoryButtons } from './components/CategoryButtons/CategoryButtons';
 import { ExpenseForm } from './components/ExpenseForm/ExpenseForm';
 import { BalanceList } from './components/BalanceList/BalanceList';
 import { ReportModal } from './components/ReportModal/ReportModal';
-import { ActionButtons } from './components/ActionButtons/ActionButtons';
-import Analytics from "./components/Analytics/Analytics"
+import Analytics from "./components/Analytics/Analytics";
 import { PastReportsModal } from './components/PastReports/PastReports';
 import { db } from './services/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -14,6 +13,10 @@ import { CategoryBalance, Expense, INITIAL_BALANCE, MonthlyReport } from './type
 import { JerusalemClock } from './components/JerusalemClock/JerusalemClock';
 import AdminPanel from './components/AdminPanel/AdminPanel';
 import { ExpenseUploader } from './components/ExpenseUploader/ExpenseUploader';
+import { ActionButtons } from './components/ActionButtons/ActionButtons';
+import SmallCash from './components/SmallCash/SmallCash';
+
+
 import './styles.css';
 
 function App() {
@@ -24,6 +27,8 @@ function App() {
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showPastReports, setShowPastReports] = useState(false);
   const [pastReports, setPastReports] = useState<MonthlyReport[]>([]);
+  const [showSmallCash, setShowSmallCash] = useState(false);
+
   
   const { isLoading, error, withLoading } = useLoading();
 
@@ -168,6 +173,7 @@ function App() {
     setShowReport(false);
     setShowAnalytics(false);
     setShowPastReports(false);
+    setShowSmallCash(false);
     setSelectedCategory(null);
   };
 
@@ -224,6 +230,13 @@ function App() {
             onShowReport={() => setShowReport(true)}
             onShowAnalytics={() => setShowAnalytics(true)}
             onShowPastReports={() => setShowPastReports(true)}  
+            onShowSmallCash={() => setShowSmallCash(true)}
+          />
+
+          <SmallCash 
+            expenses={expenses}
+            actionBtnClicked={showSmallCash}
+            onClose={() => setShowSmallCash(false)}
           />
 
           {showPastReports && (

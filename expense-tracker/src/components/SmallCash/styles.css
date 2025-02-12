@@ -1,0 +1,76 @@
+/* SmallCash styles.css */
+.small-cash-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .small-cash-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
+    border: 1px solid #ddd;
+    position: relative;
+  }
+  
+  .small-cash-content h3 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #2E1A47;
+    font-family: 'Arial', sans-serif;
+    font-size: 24px;
+  }
+  
+  .small-cash-amount {
+    margin: 40px 0;
+    padding: 20px;
+    border-radius: 10px;
+    background-color: #f9f9f9;
+    box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    font-size: 32px;
+    font-weight: 700;
+    color: #4caf50;
+  }
+  
+  .close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 10px 30px;
+    background-color: #FF6B6B;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .close-btn:hover {
+    background-color: #ff5252;
+  }
+  
+  @media (max-width: 480px) {
+    .small-cash-content {
+      width: 95%;
+      padding: 20px;
+    }
+    
+    .small-cash-amount {
+      font-size: 24px;
+      padding: 15px;
+    }
+  }
