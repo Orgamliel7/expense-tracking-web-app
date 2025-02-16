@@ -12,7 +12,7 @@ interface ExpenseUploaderProps {
 }
 
 interface RowData {
-  category: string;
+  category: keyof CategoryBalance;
   amount: string | number;
   date: string | number;
   note?: string;
@@ -31,7 +31,7 @@ export const ExpenseUploader: React.FC<ExpenseUploaderProps> = ({
     // If it's a number (Excel serial date)
     if (typeof dateValue === 'number') {
       const utc = new Date(Date.UTC(1899, 11, 30)); // Start date in Excel is Dec 30, 1899
-      utc.setDate(utc.getDate() + dateValue); // Adjust date by serial value
+      utc.setDate(utc.getDate() + dateValue);
       return utc;
     }
   
@@ -43,36 +43,35 @@ export const ExpenseUploader: React.FC<ExpenseUploaderProps> = ({
         return isoDate;
       }
   
-      // Check if the date is in a "dd.mm.yyyy" format and flip day/month if so
+      // Check if the date is in a "dd.mm.yyyy" format
       if (dateValue.includes('.')) {
-        let parts = dateValue.split('.');
+        const parts = dateValue.split('.');
         if (parts.length === 3) {
           const day = parseInt(parts[0], 10);
-          const month = parseInt(parts[1], 10) - 1; // JavaScript months are zero-based
+          const month = parseInt(parts[1], 10) - 1;
           const year = parseInt(parts[2], 10);
-          return new Date(year, day - 1, month); // Flipping day and month
+          return new Date(year, month, day);
         }
       }
   
       // Handle slash and dash separated date formats
-      let parts = dateValue.split(/[./\s-]/); // Split by slashes, dots, spaces, or dashes
+      const parts = dateValue.split(/[./\s-]/);
       if (parts.length >= 3) {
         const day = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10) - 1; // JavaScript months are zero-based
+        const month = parseInt(parts[1], 10) - 1;
         let year = parseInt(parts[2], 10);
   
         // If year is in two digits, assume 20xx
         if (year < 100) year += 2000;
   
         // Handle time part if present (HH:MM)
-        const timePart = parts.length === 4 ? parts[3] : ''; // If there's a 4th part, it's the time
+        const timePart = parts.length === 4 ? parts[3] : '';
   
-        // Return the date as a Date object (without time part for now)
         const date = new Date(year, month, day);
   
         if (timePart) {
           const [hours, minutes] = timePart.split(':').map(Number);
-          date.setHours(hours, minutes); // Set the time if available
+          date.setHours(hours, minutes);
         }
   
         return date;
@@ -80,13 +79,6 @@ export const ExpenseUploader: React.FC<ExpenseUploaderProps> = ({
     }
   
     throw new Error(`Invalid date format: ${dateValue}`);
-  };
-
-  const formatDate = (date: Date): string => {
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,8 +90,6 @@ export const ExpenseUploader: React.FC<ExpenseUploaderProps> = ({
         return;
       }
 
-      console.log('Reading file:', file.name);
-
       const reader = new FileReader();
 
       reader.onload = async (e) => {
@@ -109,13 +99,9 @@ export const ExpenseUploader: React.FC<ExpenseUploaderProps> = ({
             throw new Error('No data read from file');
           }
 
-          // Parse Excel file
           const workbook = XLSX.read(data, { type: 'array' });
-          console.log('Workbook sheets:', workbook.SheetNames);
-
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
           const rows: RowData[] = XLSX.utils.sheet_to_json(firstSheet, { raw: false });
-          console.log('Parsed rows:', rows);
 
           if (rows.length === 0) {
             throw new Error('No data found in Excel file');
@@ -125,9 +111,14 @@ export const ExpenseUploader: React.FC<ExpenseUploaderProps> = ({
           const updatedBalances = { ...balances };
 
           for (const row of rows) {
-            console.log('Processing row:', row);
             if (!row.category || !row.amount || !row.date) {
               console.warn('Skipping row due to missing required fields:', row);
+              continue;
+            }
+
+            // Validate that the category exists in CategoryBalance
+            if (!(row.category in balances)) {
+              console.warn('Invalid category:', row.category);
               continue;
             }
           
@@ -140,39 +131,27 @@ export const ExpenseUploader: React.FC<ExpenseUploaderProps> = ({
                 continue;
               }
           
-              // Update balance (subtract the expense amount from the current balance)
-              if (updatedBalances[row.category] !== undefined) {
-                updatedBalances[row.category] -= amountNumber; // Subtract instead of adding
-              } else {
-                console.warn('Unknown category:', row.category);
-                continue;
-              }
+              updatedBalances[row.category] -= amountNumber;
           
-              // Create new expense (use positive value for expenses)
               const newExpense: Expense = {
-                note: row.note || '',
-                category: row.category,
-                amount: amountNumber, // Use the positive amount directly
+                category: row.category as keyof CategoryBalance,
+                amount: amountNumber,
                 date: parsedDate.toISOString(),
                 displayAmount: amountNumber.toLocaleString('he-IL'),
+                note: row.note || '',
               };
           
               updatedExpenses.push(newExpense);
-              console.log('Added expense:', newExpense);
             } catch (err) {
               console.error('Error processing row:', row, err);
             }
           }
-          
-          console.log('Setting new expenses:', updatedExpenses);
-          console.log('Setting new balances:', updatedBalances);
           
           setBalances(updatedBalances);
           setExpenses(updatedExpenses);
           await updateExpenseData(updatedBalances, updatedExpenses);
           
           event.target.value = '';
-          console.log('File processing completed successfully');
 
         } catch (err) {
           console.error('Error processing file data:', err);
@@ -181,28 +160,30 @@ export const ExpenseUploader: React.FC<ExpenseUploaderProps> = ({
       };
 
       reader.onerror = () => {
-        console.error('FileReader error');
         setError('Error reading file');
       };
 
       reader.readAsArrayBuffer(file);
 
     } catch (err) {
-      console.error('Error in handleFileUpload:', err);
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
     }
   };
 
   return (
     <div className="expense-uploader">
-      <input 
-        type="file" 
-        accept=".xlsx,.xls"
-        onChange={handleFileUpload}
-        onClick={(e) => (e.target as HTMLInputElement).value = ''}
-      />
+      <label htmlFor="excel-upload" className="upload-button">
+        יבא הוצאות מקובץ אקסל
+        <input
+          id="excel-upload"
+          type="file"
+          accept=".xlsx,.xls"
+          onChange={handleFileUpload}
+          onClick={(e) => (e.target as HTMLInputElement).value = ''}
+        />
+      </label>
       {error && (
-        <div style={{ color: 'red', marginTop: '10px', direction: 'rtl' }}>
+        <div className="error-message">
           שגיאה: {error}
         </div>
       )}

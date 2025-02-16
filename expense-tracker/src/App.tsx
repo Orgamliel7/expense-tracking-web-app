@@ -206,9 +206,6 @@ function App() {
               setExpenses={setExpenses}
               updateExpenseData={updateDataInFirestore}
             />
-            <label className="excel-import-label" htmlFor="file-upload">
-              יבא הוצאות מקובץ אקסל
-            </label>
           </div>
 
           <ExpenseForm

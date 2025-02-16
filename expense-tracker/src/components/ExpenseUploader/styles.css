@@ -1,0 +1,54 @@
+/* styles.css */
+
+/* Position the uploader container in the top left */
+.expense-uploader {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  /* Updated button style */
+  .upload-button {
+    background-color: #28a745; /* Green color */
+    color: #fff;
+    padding: 0.5rem 1rem; /* Smaller padding */
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem; /* Smaller font size */
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Hover and active states for the button */
+  .upload-button:hover {
+    background-color: #218838; /* Darker green on hover */
+  }
+  
+  .upload-button:active {
+    transform: translateY(1px);
+  }
+  
+  /* Hide the default file input */
+  .upload-button input[type="file"] {
+    display: none;
+  }
+  
+  /* Updated error message style */
+  .error-message {
+    color: #e74c3c;
+    background-color: #fdeaea;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    text-align: left;
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid #fabdbd;
+  }
+  
