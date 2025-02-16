@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Expense, INITIAL_BALANCE } from '../../types';
 import './styles.css';
+import { db } from '../../services/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 interface Subtraction {
   id: string;
@@ -17,18 +19,43 @@ interface SmallCashProps {
 
 const SmallCash: React.FC<SmallCashProps> = ({ expenses, actionBtnClicked, onClose }) => {
   const [subtractions, setSubtractions] = useState<Subtraction[]>([]);
-  const [amount, setAmount] = useState<string>(''); // Initially empty
+  const [amount, setAmount] = useState<string>('');
   const [date, setDate] = useState<string>('');
   const [note, setNote] = useState<string>('');
 
-  // Set default date to the current date in Jerusalem timezone
+  // Fetch subtractions from Firestore on component mount
+  useEffect(() => {
+    const fetchSubtractions = async () => {
+      const docRef = doc(db, 'balances', 'smallCashData');
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        setSubtractions(docSnap.data().subtractions || []);
+      }
+    };
+
+    fetchSubtractions();
+  }, []);
+
+  // Update Firestore when subtractions change
+  const updateFirestore = async (newSubtractions: Subtraction[]) => {
+    const docRef = doc(db, 'balances', 'smallCashData');
+    try {
+      await setDoc(docRef, { subtractions: newSubtractions });
+    } catch (error) {
+      console.error('Error updating small cash data:', error);
+      alert('Failed to save changes. Please try again.');
+    }
+  };
+
+  // Set default date to current date in Jerusalem timezone
   useEffect(() => {
     const jerusalemDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' });
-    const dateString = new Date(jerusalemDate).toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    const dateString = new Date(jerusalemDate).toISOString().split('T')[0];
     setDate(dateString);
   }, []);
 
-  // Calculate the monthly saved data (30% of the saving rate for each month, including the current one)
+  // Calculate monthly data
   const calculateMonthlyData = useMemo(() => {
     const totalInitialBudget = Object.values(INITIAL_BALANCE).reduce((a, b) => a + b, 0);
     const monthlyData: Record<string, { saved: number }> = {};
@@ -41,49 +68,65 @@ const SmallCash: React.FC<SmallCashProps> = ({ expenses, actionBtnClicked, onClo
       }
 
       const monthKey = `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
-
       if (!monthlyData[monthKey]) {
         monthlyData[monthKey] = { saved: totalInitialBudget };
       }
-
       monthlyData[monthKey].saved -= expense.amount;
     });
 
     return monthlyData;
   }, [expenses]);
 
-  // Calculate the small cash amount (30% of total savings)
+  // Calculate small cash amount (30% of total savings)
   const smallCashAmount = useMemo(() => {
     const totalSaved = Object.values(calculateMonthlyData).reduce((acc, { saved }) => acc + saved, 0);
     return totalSaved * 0.3;
   }, [calculateMonthlyData]);
 
   // Handle adding a new subtraction
-  const handleAddSubtraction = () => {
+  const handleAddSubtraction = async () => {
     if (amount.trim() === '' || !date) {
       alert('Please enter a valid amount and date.');
       return;
     }
 
     const newSubtraction: Subtraction = {
-      id: `${Date.now()}`, // Unique ID based on timestamp
+      id: `${Date.now()}`,
       amount: parseFloat(amount),
       date,
       note,
     };
 
-    setSubtractions((prevSubtractions) => [...prevSubtractions, newSubtraction]);
+    const newSubtractions = [...subtractions, newSubtraction];
+    setSubtractions(newSubtractions);
+    await updateFirestore(newSubtractions);
+    
+    // Reset form
     setAmount('');
     setDate('');
     setNote('');
   };
 
   // Handle deleting a subtraction
-  const handleDeleteSubtraction = (id: string) => {
-    setSubtractions((prevSubtractions) =>
-      prevSubtractions.filter((sub) => sub.id !== id)
-    );
+  const handleDeleteSubtraction = async (id: string) => {
+    const newSubtractions = subtractions.filter((sub) => sub.id !== id);
+    setSubtractions(newSubtractions);
+    await updateFirestore(newSubtractions);
   };
+
+  // Handle keyboard events
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      } else if (e.key === 'Enter' && !e.shiftKey) {
+        handleAddSubtraction();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, amount, date, note]);
 
   if (!actionBtnClicked) return null;
 
@@ -98,7 +141,6 @@ const SmallCash: React.FC<SmallCashProps> = ({ expenses, actionBtnClicked, onClo
           ₪{(smallCashAmount - subtractions.reduce((acc, { amount }) => acc + amount, 0)).toFixed(2)}
         </div>
 
-        {/* Add Subtraction Form */}
         <div className="add-subtraction-form">
           <input
             type="number"
@@ -125,7 +167,6 @@ const SmallCash: React.FC<SmallCashProps> = ({ expenses, actionBtnClicked, onClo
           </button>
         </div>
 
-        {/* Subtraction List */}
         <div className="subtractions-list">
           {subtractions.map((subtraction) => (
             <div key={subtraction.id} className="subtraction-item">
