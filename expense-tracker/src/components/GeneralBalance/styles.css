@@ -1,0 +1,104 @@
+.general-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .general-content {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 1200px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    direction: rtl;
+  }
+  
+  .close-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+  }
+  
+  .close-btn:hover {
+    color: #333;
+  }
+  
+  .month-selector {
+    margin: 1rem 0;
+  }
+  
+  .month-select {
+    padding: 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    font-size: 1rem;
+    width: 200px;
+  }
+  
+  .chart-section {
+    margin: 2rem 0;
+    padding: 1rem;
+    background-color: #f9fafb;
+    border-radius: 8px;
+  }
+  
+  .data-entry-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin: 2rem 0;
+  }
+  
+  .expense-section,
+  .income-section {
+    background-color: #f9fafb;
+    padding: 1rem;
+    border-radius: 8px;
+  }
+  
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .input-group input,
+  .input-group select {
+    padding: 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    font-size: 1rem;
+  }
+  
+  .recurring-expenses-section {
+    margin: 2rem 0;
+    padding: 1rem;
+    background-color: #f9fafb;
+    border-radius: 8px;
+  }
+  
+  .transaction-item.recurring {
+    background-color: #f3f4f6;
+    border-left: 4px solid #4b5563;
+  }
+  
+  .recurring-expenses-section .transaction-item {
+    margin-bottom: 0.5rem;
+  }
+
+  

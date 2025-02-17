@@ -15,6 +15,8 @@ import AdminPanel from './components/AdminPanel/AdminPanel';
 import { ExpenseUploader } from './components/ExpenseUploader/ExpenseUploader';
 import { ActionButtons } from './components/ActionButtons/ActionButtons';
 import SmallCash from './components/SmallCash/SmallCash';
+import General from './components/GeneralBalance/GeneralBalance';
+
 
 
 import './styles.css';
@@ -28,6 +30,7 @@ function App() {
   const [showPastReports, setShowPastReports] = useState(false);
   const [pastReports, setPastReports] = useState<MonthlyReport[]>([]);
   const [showSmallCash, setShowSmallCash] = useState(false);
+  const [showGeneral, setShowGeneral] = useState(false);
 
   
   const { isLoading, error, withLoading } = useLoading();
@@ -172,6 +175,7 @@ function App() {
     setShowAnalytics(false);
     setShowPastReports(false);
     setShowSmallCash(false);
+    setShowGeneral(false); 
     setSelectedCategory(null);
   };
 
@@ -220,12 +224,20 @@ function App() {
             updateExpenseData={updateDataInFirestore}
           />
 
+          <General 
+            expenses={expenses}
+            balances={balances}
+            actionBtnClicked={showGeneral}
+            onClose={() => setShowGeneral(false)}
+          />
+
           <ActionButtons
             expenses={expenses}
             onShowReport={() => setShowReport(true)}
             onShowAnalytics={() => setShowAnalytics(true)}
             onShowPastReports={() => setShowPastReports(true)}  
             onShowSmallCash={() => setShowSmallCash(true)}
+            onShowGeneral={() => setShowGeneral(true)}
           />
 
           <SmallCash 
