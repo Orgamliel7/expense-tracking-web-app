@@ -1,104 +1,147 @@
 .general-container {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    max-width: 1000px;
+    max-height: 90vh;
+    overflow-y: auto;
     z-index: 1000;
+    direction: rtl;
   }
   
   .general-content {
-    background-color: white;
-    padding: 2rem;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 1200px;
-    max-height: 90vh;
-    overflow-y: auto;
     position: relative;
-    direction: rtl;
   }
   
   .close-btn {
     position: absolute;
-    top: 1rem;
-    right: 1rem;
-    background: none;
+    top: -1rem;
+    left: -1rem;
+    background: #e53e3e;
+    color: white;
     border: none;
-    font-size: 1.5rem;
+    border-radius: 50%;
+    width: 2rem;
+    height: 2rem;
+    font-size: 1.2rem;
     cursor: pointer;
-    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
   }
   
   .close-btn:hover {
-    color: #333;
+    background: #c53030;
   }
   
   .month-selector {
-    margin: 1rem 0;
+    margin-bottom: 2rem;
   }
   
   .month-select {
     padding: 0.5rem;
     border-radius: 4px;
-    border: 1px solid #ddd;
-    font-size: 1rem;
+    border: 1px solid #e2e8f0;
     width: 200px;
   }
   
   .chart-section {
-    margin: 2rem 0;
+    margin-bottom: 2rem;
     padding: 1rem;
-    background-color: #f9fafb;
+    background: #f7fafc;
     border-radius: 8px;
   }
   
-  .data-entry-section {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-    margin: 2rem 0;
+  .fixed-expenses-section {
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: #edf2f7;
+    border-radius: 8px;
   }
   
-  .expense-section,
-  .income-section {
-    background-color: #f9fafb;
-    padding: 1rem;
-    border-radius: 8px;
+  .fixed-expense-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .expense-section {
+    margin-bottom: 2rem;
   }
   
   .input-group {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .input-group input {
+    padding: 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .input-group button {
+    padding: 0.5rem 1rem;
+    background: #4299e1;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .input-group button:hover {
+    background: #3182ce;
+  }
+  
+  .expenses-list {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
   }
   
-  .input-group input,
-  .input-group select {
-    padding: 0.5rem;
+  .expense-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: #f7fafc;
     border-radius: 4px;
-    border: 1px solid #ddd;
-    font-size: 1rem;
+    gap: 1rem;
   }
   
-  .recurring-expenses-section {
-    margin: 2rem 0;
-    padding: 1rem;
-    background-color: #f9fafb;
-    border-radius: 8px;
+  .expense-item .date {
+    min-width: 100px;
   }
   
-  .transaction-item.recurring {
-    background-color: #f3f4f6;
-    border-left: 4px solid #4b5563;
+  .expense-item .description {
+    flex-grow: 1;
   }
   
-  .recurring-expenses-section .transaction-item {
-    margin-bottom: 0.5rem;
+  .expense-item .amount {
+    min-width: 100px;
+    text-align: left;
   }
-
   
+  .delete-btn {
+    padding: 0.25rem 0.5rem;
+    background: #fc8181;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .delete-btn:hover {
+    background: #f56565;
+  }

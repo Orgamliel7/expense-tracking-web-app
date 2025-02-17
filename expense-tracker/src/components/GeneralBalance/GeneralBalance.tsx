@@ -15,9 +15,6 @@ interface GeneralProps {
 
 interface CustomExpense extends Expense {
   id: string;
-  amount: number;
-  category: keyof CategoryBalance;
-  date: string;
   description: string;
   displayAmount: string;
 }
@@ -31,6 +28,10 @@ interface MonthlyData {
     date: string;
     description: string;
   }[];
+  fixedExpenses: {
+    description: string;
+    amount: number;
+  }[];
 }
 
 const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked, onClose }) => {
@@ -39,9 +40,8 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
   const [selectedMonth, setSelectedMonth] = useState<string>('');
   const [newExpense, setNewExpense] = useState({
     amount: '',
-    category: '' as keyof CategoryBalance,
-    date: '',
-    description: ''
+    description: '',
+    date: new Date().toISOString().split('T')[0]
   });
   const [newIncome, setNewIncome] = useState({
     amount: '',
@@ -55,8 +55,6 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
     const dateObj = new Date(jerusalemDate);
     const monthKey = `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
     setSelectedMonth(monthKey);
-    setNewExpense(prev => ({ ...prev, date: dateObj.toISOString().split('T')[0] }));
-    setNewIncome(prev => ({ ...prev, date: dateObj.toISOString().split('T')[0] }));
   }, []);
 
   // Fetch custom data from Firestore
@@ -64,7 +62,7 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
     const fetchCustomData = async () => {
       const docRef = doc(db, 'customData', 'generalData');
       const docSnap = await getDoc(docRef);
-
+      
       if (docSnap.exists()) {
         const data = docSnap.data();
         setCustomExpenses(data.expenses || []);
@@ -74,6 +72,94 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
 
     fetchCustomData();
   }, []);
+
+  // Calculate monthly data including fixed expenses
+  const monthlyData = useMemo(() => {
+    const data: Record<string, MonthlyData> = {};
+    
+    // Process fixed expenses from generalBalance
+    const processMonth = (monthKey: string) => {
+      if (!data[monthKey]) {
+        data[monthKey] = {
+          month: monthKey,
+          expenses: [],
+          incomes: [],
+          fixedExpenses: Object.entries(generalBalance['fixed-expenses']).map(([description, amount]) => ({
+            description,
+            amount: Number(amount)
+          }))
+        };
+      }
+    };
+
+    // Process regular expenses
+    expenses.forEach(expense => {
+      const date = new Date(expense.date);
+      const monthKey = `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+      processMonth(monthKey);
+    });
+
+    // Process custom expenses
+    customExpenses.forEach(expense => {
+      const date = new Date(expense.date);
+      const monthKey = `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+      processMonth(monthKey);
+      data[monthKey].expenses.push(expense);
+    });
+
+    // Process incomes
+    incomes.forEach(income => {
+      const date = new Date(income.date);
+      const monthKey = `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+      processMonth(monthKey);
+      data[monthKey].incomes.push(income);
+    });
+
+    return data;
+  }, [expenses, customExpenses, incomes]);
+
+  // Get chart data for selected month
+  const chartData = useMemo(() => {
+    const selectedData = monthlyData[selectedMonth];
+    if (!selectedData) return [];
+
+    const totalExpenses = selectedData.expenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const totalFixedExpenses = selectedData.fixedExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const totalIncomes = selectedData.incomes.reduce((sum, inc) => sum + inc.amount, 0);
+
+    return [
+      { name: 'הוצאות משתנות', amount: totalExpenses },
+      { name: 'הוצאות קבועות', amount: totalFixedExpenses },
+      { name: 'הכנסות', amount: totalIncomes },
+      { name: 'מאזן', amount: totalIncomes - (totalExpenses + totalFixedExpenses) }
+    ];
+  }, [monthlyData, selectedMonth]);
+
+  // Handle adding new expense
+  const handleAddExpense = async () => {
+    if (!newExpense.amount || !newExpense.description) {
+      alert('נא למלא סכום ותיאור');
+      return;
+    }
+
+    const expense: CustomExpense = {
+      id: Date.now().toString(),
+      amount: parseFloat(newExpense.amount),
+      category: 'כללי' as keyof CategoryBalance,
+      date: newExpense.date,
+      description: newExpense.description,
+      displayAmount: `₪${parseFloat(newExpense.amount).toFixed(2)}`
+    };
+
+    const newExpenses = [...customExpenses, expense];
+    setCustomExpenses(newExpenses);
+    await updateFirestore(newExpenses, incomes);
+    setNewExpense({
+      amount: '',
+      description: '',
+      date: new Date().toISOString().split('T')[0]
+    });
+  };
 
   // Update Firestore
   const updateFirestore = async (newExpenses: CustomExpense[], newIncomes: MonthlyData['incomes']) => {
@@ -85,147 +171,16 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
       });
     } catch (error) {
       console.error('Error updating general data:', error);
-      alert('Failed to save changes. Please try again.');
+      alert('שגיאה בשמירת הנתונים. נא לנסות שוב.');
     }
   };
-
-  // Calculate monthly data
-  const monthlyData = useMemo(() => {
-    const data: Record<string, MonthlyData> = {};
-
-    // Process regular expenses
-    expenses.forEach(expense => {
-      const date = new Date(expense.date);
-      const monthKey = `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
-
-      if (!data[monthKey]) {
-        data[monthKey] = {
-          month: monthKey,
-          expenses: [],
-          incomes: []
-        };
-      }
-    });
-
-    // Process custom expenses
-    customExpenses.forEach(expense => {
-      const date = new Date(expense.date);
-      const monthKey = `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
-
-      if (!data[monthKey]) {
-        data[monthKey] = {
-          month: monthKey,
-          expenses: [],
-          incomes: []
-        };
-      }
-      data[monthKey].expenses.push(expense);
-    });
-
-    // Process incomes
-    incomes.forEach(income => {
-      const date = new Date(income.date);
-      const monthKey = `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
-
-      if (!data[monthKey]) {
-        data[monthKey] = {
-          month: monthKey,
-          expenses: [],
-          incomes: []
-        };
-      }
-      data[monthKey].incomes.push(income);
-    });
-
-    return data;
-  }, [expenses, customExpenses, incomes]);
-
-  // Handle adding new expense
-  const handleAddExpense = async () => {
-    if (!newExpense.amount || !newExpense.date || !newExpense.category) {
-      alert('Please fill in all required fields');
-      return;
-    }
-
-    const expense: CustomExpense = {
-      id: Date.now().toString(),
-      amount: parseFloat(newExpense.amount),
-      category: newExpense.category,
-      date: newExpense.date,
-      description: newExpense.description,
-      displayAmount: newExpense.amount
-    };
-
-    const newExpenses = [...customExpenses, expense];
-    setCustomExpenses(newExpenses);
-    await updateFirestore(newExpenses, incomes);
-    setNewExpense({
-      amount: '',
-      category: '' as keyof CategoryBalance,
-      date: newExpense.date,
-      description: ''
-    });
-  };
-
-  // Handle adding new income
-  const handleAddIncome = async () => {
-    if (!newIncome.amount || !newIncome.date) {
-      alert('Please fill in all required fields');
-      return;
-    }
-
-    const income = {
-      id: Date.now().toString(),
-      amount: parseFloat(newIncome.amount),
-      date: newIncome.date,
-      description: newIncome.description
-    };
-
-    const newIncomes = [...incomes, income];
-    setIncomes(newIncomes);
-    await updateFirestore(customExpenses, newIncomes);
-    setNewIncome({
-      amount: '',
-      date: newIncome.date,
-      description: ''
-    });
-  };
-
-  // Handle deleting expense
-  const handleDeleteExpense = async (id: string) => {
-    const newExpenses = customExpenses.filter(expense => expense.id !== id);
-    setCustomExpenses(newExpenses);
-    await updateFirestore(newExpenses, incomes);
-  };
-
-  // Handle deleting income
-  const handleDeleteIncome = async (id: string) => {
-    const newIncomes = incomes.filter(income => income.id !== id);
-    setIncomes(newIncomes);
-    await updateFirestore(customExpenses, newIncomes);
-  };
-
-  // Get chart data for selected month
-  const chartData = useMemo(() => {
-    const selectedData = monthlyData[selectedMonth];
-    if (!selectedData) return [];
-
-    const totalExpenses = selectedData.expenses.reduce((sum, exp) => sum + exp.amount, 0);
-    const totalIncomes = selectedData.incomes.reduce((sum, inc) => sum + inc.amount, 0);
-
-    return [
-      { name: 'הוצאות', amount: totalExpenses },
-      { name: 'הכנסות', amount: totalIncomes },
-      { name: 'מאזן', amount: totalIncomes - totalExpenses }
-    ];
-  }, [monthlyData, selectedMonth]);
 
   if (!actionBtnClicked) return null;
 
   return (
     <div className="general-container">
       <div className="general-content">
-        <button onClick={onClose} className="close-btn">x</button>
+        <button onClick={onClose} className="close-btn">×</button>
         <h2>כללי</h2>
 
         <div className="month-selector">
@@ -249,26 +204,19 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
               <YAxis />
               <Tooltip formatter={(value) => `₪${Number(value).toFixed(2)}`} />
               <Legend />
-              <Bar
-                dataKey="amount"
-                fill="#f56565"
-                barSize={30}
-                radius={[10, 10, 0, 0]}
-              />
-              <Bar
-                dataKey="amount"
-                fill="#82ca9d"
-                barSize={30}
-                radius={[10, 10, 0, 0]}
-              />
-              <Bar
-                dataKey="amount"
-                fill="#6b7280"
-                barSize={30}
-                radius={[10, 10, 0, 0]}
-              />
+              <Bar dataKey="amount" fill="#8884d8" />
             </BarChart>
           </ResponsiveContainer>
+        </div>
+
+        <div className="fixed-expenses-section">
+          <h3>הוצאות קבועות לחודש</h3>
+          {monthlyData[selectedMonth]?.fixedExpenses.map((expense, index) => (
+            <div key={index} className="fixed-expense-item">
+              <span className="description">{expense.description}</span>
+              <span className="amount">₪{expense.amount.toFixed(2)}</span>
+            </div>
+          ))}
         </div>
 
         <div className="expense-section">
@@ -276,67 +224,48 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
           <div className="input-group">
             <input
               type="number"
-              placeholder="סכום"
+              placeholder="סכום *"
               value={newExpense.amount}
               onChange={(e) => setNewExpense(prev => ({ ...prev, amount: e.target.value }))}
+              required
             />
-            <select
-              value={newExpense.category}
-              onChange={(e) => setNewExpense(prev => ({ ...prev, category: e.target.value as keyof CategoryBalance }))}
-            >
-              {Object.keys(balances).map((category) => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
             <input
               type="text"
-              placeholder="תיאור"
+              placeholder="תיאור *"
               value={newExpense.description}
               onChange={(e) => setNewExpense(prev => ({ ...prev, description: e.target.value }))}
+              required
+            />
+            <input
+              type="date"
+              value={newExpense.date}
+              onChange={(e) => setNewExpense(prev => ({ ...prev, date: e.target.value }))}
             />
             <button onClick={handleAddExpense}>הוסף הוצאה</button>
           </div>
         </div>
 
-        <div className="income-section">
-          <h3>הוספת הכנסה</h3>
-          <div className="input-group">
-            <input
-              type="number"
-              placeholder="סכום"
-              value={newIncome.amount}
-              onChange={(e) => setNewIncome(prev => ({ ...prev, amount: e.target.value }))}
-            />
-            <input
-              type="text"
-              placeholder="תיאור"
-              value={newIncome.description}
-              onChange={(e) => setNewIncome(prev => ({ ...prev, description: e.target.value }))}
-            />
-            <button onClick={handleAddIncome}>הוסף הכנסה</button>
-          </div>
-        </div>
-
         <div className="existing-data">
           <h3>הוצאות קיימות</h3>
-          <ul>
+          <div className="expenses-list">
             {customExpenses.map((expense) => (
-              <li key={expense.id}>
-                <span>{expense.date}: {expense.amount}₪ ({expense.category})</span>
-                <button onClick={() => handleDeleteExpense(expense.id)}>מחק</button>
-              </li>
+              <div key={expense.id} className="expense-item">
+                <span className="date">{new Date(expense.date).toLocaleDateString('he-IL')}</span>
+                <span className="description">{expense.description}</span>
+                <span className="amount">{expense.displayAmount}</span>
+                <button 
+                  onClick={() => {
+                    const newExpenses = customExpenses.filter(e => e.id !== expense.id);
+                    setCustomExpenses(newExpenses);
+                    updateFirestore(newExpenses, incomes);
+                  }}
+                  className="delete-btn"
+                >
+                  מחק
+                </button>
+              </div>
             ))}
-          </ul>
-
-          <h3>הכנסות קיימות</h3>
-          <ul>
-            {incomes.map((income) => (
-              <li key={income.id}>
-                <span>{income.date}: {income.amount}₪ ({income.description})</span>
-                <button onClick={() => handleDeleteIncome(income.id)}>מחק</button>
-              </li>
-            ))}
-          </ul>
+          </div>
         </div>
       </div>
     </div>
