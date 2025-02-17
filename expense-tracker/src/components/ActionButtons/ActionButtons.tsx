@@ -9,7 +9,8 @@ interface ActionButtonsProps {
   onShowReport: () => void;
   onShowAnalytics: () => void;
   onShowPastReports: () => void;
-  onShowSmallCash: () => void; // Added prop to handle the small cash button click
+  onShowSmallCash: () => void;
+  onShowGeneral: () => void; // Added new prop for general button
 }
 
 export const ActionButtons: React.FC<ActionButtonsProps> = ({
@@ -17,7 +18,8 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   onShowReport,
   onShowAnalytics,
   onShowPastReports,
-  onShowSmallCash, // Destructure the handler
+  onShowSmallCash,
+  onShowGeneral, // Destructure the new handler
 }) => {
   const handleDownloadExcel = () => {
     if (expenses.length === 0) {
@@ -48,6 +50,9 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       </button>
       <button onClick={onShowSmallCash} className="small-cash-button">
         קופה קטנה
+      </button>
+      <button onClick={onShowGeneral} className="general-button">
+        כללי
       </button>
     </div>
   );
