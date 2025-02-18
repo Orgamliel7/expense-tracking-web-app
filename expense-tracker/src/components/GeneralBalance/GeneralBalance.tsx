@@ -142,8 +142,8 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
     const totalIncomes = customIncomesTotal + fixedIncomesTotal;
 
     return [
-      { name: 'הוצאות משתנות', amount: -customExpensesTotal, fill: '#FCA5A5' },
-      { name: 'הוצאות קבועות', amount: -fixedExpensesTotal, fill: '#F87171' },
+      { name: 'הוצאות משתנות', amount: customExpensesTotal, fill: '#FCA5A5' },
+      { name: 'הוצאות קבועות', amount: fixedExpensesTotal, fill: '#F87171' },
       { name: 'הכנסות משתנות', amount: customIncomesTotal, fill: '#86EFAC' },
       { name: 'הכנסות קבועות', amount: fixedIncomesTotal, fill: '#4ADE80' },
       { name: 'מאזן חודשי', amount: totalIncomes - totalExpenses, fill: '#60A5FA' }
@@ -240,13 +240,13 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
             <BarChart data={chartData} margin={{ top: 20, right: 30, left: 30, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
-              <YAxis />
+              <YAxis domain={[0, 'auto']} tick={{ dx: -10 }} />  {/* Ensure bars start from 0 + Shift labels */}
               <Tooltip 
                 formatter={(value) => `₪${Math.abs(Number(value)).toFixed(2)}`}
                 contentStyle={{ direction: 'rtl' }}
               />
               <Legend />
-              <Bar dataKey="amount" fill="#4a90e2" barSize={20} />  {/* Adjust the barSize value */}
+              <Bar dataKey="amount" fill="#4a90e2" barSize={15} />  {/* Adjust bar thickness */}
             </BarChart>
           </ResponsiveContainer>
         </div>
