@@ -1,5 +1,5 @@
 import React from 'react';
-import { CategoryBalance, Expense } from '../../types';
+import { CategoryBalance, Expense, INITIAL_BALANCE} from '../../types';
 import './styles.css';
 
 interface ReportModalProps {
@@ -20,11 +20,13 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   updateExpenseData,
 }) => {
   const handleDeleteExpense = async (expenseToDelete: Expense) => {
-    // Correct the balance by adding back the amount (because we're removing the expense)
-    const updatedBalances = {
-      ...balances,
-      [expenseToDelete.category]: balances[expenseToDelete.category] + expenseToDelete.amount,  // Add the amount back to the balance
-    };
+    // Create a copy of current balances
+    const updatedBalances = { ...balances };
+    
+    // Only add back the amount if current balance is less than or equal to initial balance
+    if (balances[expenseToDelete.category] <= INITIAL_BALANCE[expenseToDelete.category]) {
+      updatedBalances[expenseToDelete.category] = balances[expenseToDelete.category] + expenseToDelete.amount;
+    }
   
     // Remove the expense from the expenses array
     const updatedExpenses = expenses.filter((expense) => expense !== expenseToDelete);

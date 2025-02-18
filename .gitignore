@@ -1,2 +1,3 @@
 important.txt
 expense-tracker/src/services/firebase.js
+expense-tracker/src/values.tsx

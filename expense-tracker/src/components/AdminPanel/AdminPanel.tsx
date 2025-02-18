@@ -23,6 +23,48 @@ const AdminPanel = () => {
     onEscape: handleEscape,
   });
 
+  const checkAndResetExceededValues = async () => {
+    try {
+      // Get current data from Firebase
+      const docRef = doc(db, 'balances', 'expenseData');
+      const docSnap = await getDoc(docRef);
+      
+      if (!docSnap.exists()) {
+        setMessage('No existing data found to check');
+        return;
+      }
+
+      const currentData = docSnap.data();
+      const currentBalances = currentData.balances || {};
+      
+      // Create new balances object
+      const updatedBalances: CategoryBalance = { ...currentBalances };
+      let hasChanges = false;
+
+      // Check each category
+      Object.keys(INITIAL_BALANCE).forEach(category => {
+        const key = category as keyof CategoryBalance;
+        if (currentBalances[key] > INITIAL_BALANCE[key]) {
+          updatedBalances[key] = INITIAL_BALANCE[key];
+          hasChanges = true;
+        }
+      });
+
+      if (hasChanges) {
+        // Update Firebase with adjusted values
+        await setDoc(docRef, {
+          ...currentData,
+          balances: updatedBalances
+        });
+        setMessage('Successfully reset exceeded values to their initial amounts');
+      } else {
+        setMessage('No values exceeded their initial amounts');
+      }
+    } catch (error) {
+      setMessage('Error checking and resetting values: ' + (error as Error).message);
+    }
+  };
+
   const checkFirebaseData = async () => {
     try {
       const docRef = doc(db, 'balances', 'expenseData');
@@ -178,6 +220,12 @@ const AdminPanel = () => {
 
                   <button className="action-button refresh" onClick={refreshFields}>
                     Refresh Fields
+                  </button>
+                  <button 
+                    className="action-button check"  // Using same style as check button
+                    onClick={checkAndResetExceededValues}
+                  >
+                    בדוק האם ערך שדה גבוה מערך התחלתי
                   </button>
                 </div>
               )}
