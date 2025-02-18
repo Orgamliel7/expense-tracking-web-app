@@ -1,147 +1,200 @@
+/* styles.css */
 .general-container {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: white;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    width: 90%;
-    max-width: 1000px;
-    max-height: 90vh;
-    overflow-y: auto;
-    z-index: 1000;
-    direction: rtl;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.general-content {
+  background-color: white;
+  border-radius: 12px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 1200px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  direction: rtl;
+}
+
+.close-btn {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+}
+
+.general-title {
+  text-align: center;
+  color: #333;
+  margin-bottom: 2rem;
+  font-size: 1.8rem;
+}
+
+.month-selector {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.month-select {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+
+.section-title {
+  color: #333;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.chart-section {
+  background-color: #f8fafc;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.data-grid {
+  display: grid;
+  gap: 2rem;
+}
+
+.fixed-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  background-color: #f8fafc;
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.fixed-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.fixed-item.expense {
+  background-color: #fee2e2;
+}
+
+.fixed-item.income {
+  background-color: #dcfce7;
+}
+
+.input-sections {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.input-group {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.amount-input,
+.description-input,
+.date-input {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.add-btn {
+  padding: 0.75rem;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.add-btn.expense {
+  background-color: #ef4444;
+}
+
+.add-btn.expense:hover {
+  background-color: #dc2626;
+}
+
+.add-btn.income {
+  background-color: #22c55e;
+}
+
+.add-btn.income:hover {
+  background-color: #16a34a;
+}
+
+.transactions-section {
+  margin-top: 2rem;
+}
+
+.transactions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.transaction-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.transaction-item.expense {
+  background-color: #fee2e2;
+}
+
+.transaction-item.income {
+  background-color: #dcfce7;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.delete-btn:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .fixed-section,
+  .input-sections,
+  .transactions-grid {
+    grid-template-columns: 1fr;
   }
   
   .general-content {
-    position: relative;
-  }
-  
-  .close-btn {
-    position: absolute;
-    top: -1rem;
-    left: -1rem;
-    background: #e53e3e;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 2rem;
-    height: 2rem;
-    font-size: 1.2rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.2s;
-  }
-  
-  .close-btn:hover {
-    background: #c53030;
-  }
-  
-  .month-selector {
-    margin-bottom: 2rem;
-  }
-  
-  .month-select {
-    padding: 0.5rem;
-    border-radius: 4px;
-    border: 1px solid #e2e8f0;
-    width: 200px;
-  }
-  
-  .chart-section {
-    margin-bottom: 2rem;
     padding: 1rem;
-    background: #f7fafc;
-    border-radius: 8px;
+    width: 95%;
   }
-  
-  .fixed-expenses-section {
-    margin-bottom: 2rem;
-    padding: 1rem;
-    background: #edf2f7;
-    border-radius: 8px;
-  }
-  
-  .fixed-expense-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 0.5rem;
-    border-bottom: 1px solid #e2e8f0;
-  }
-  
-  .expense-section {
-    margin-bottom: 2rem;
-  }
-  
-  .input-group {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
-  }
-  
-  .input-group input {
-    padding: 0.5rem;
-    border-radius: 4px;
-    border: 1px solid #e2e8f0;
-  }
-  
-  .input-group button {
-    padding: 0.5rem 1rem;
-    background: #4299e1;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-  
-  .input-group button:hover {
-    background: #3182ce;
-  }
-  
-  .expenses-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .expense-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem;
-    background: #f7fafc;
-    border-radius: 4px;
-    gap: 1rem;
-  }
-  
-  .expense-item .date {
-    min-width: 100px;
-  }
-  
-  .expense-item .description {
-    flex-grow: 1;
-  }
-  
-  .expense-item .amount {
-    min-width: 100px;
-    text-align: left;
-  }
-  
-  .delete-btn {
-    padding: 0.25rem 0.5rem;
-    background: #fc8181;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-  
-  .delete-btn:hover {
-    background: #f56565;
-  }
+}
