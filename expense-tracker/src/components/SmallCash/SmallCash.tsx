@@ -86,7 +86,6 @@ const SmallCash: React.FC<SmallCashProps> = ({ expenses, actionBtnClicked, onClo
   // Handle adding a new subtraction
   const handleAddSubtraction = async () => {
     if (amount.trim() === '' || !date) {
-      alert('Please enter a valid amount and date.');
       return;
     }
 
