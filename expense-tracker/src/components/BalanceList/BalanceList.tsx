@@ -63,12 +63,6 @@ export const BalanceList: React.FC<BalanceListProps> = ({
                 }}
               />
             </div>
-            <button
-              className="reset-button"
-              onClick={() => handleReset(category as keyof CategoryBalance)}
-            >
-              איפוס
-            </button>
           </div>
         );
       })}

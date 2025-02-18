@@ -31,12 +31,6 @@ export const BalanceItem: React.FC<BalanceItemProps> = ({ category, balance, onR
           }}
         />
       </div>
-      <button
-        onClick={() => onReset(category)}
-        className="reset-button"
-      >
-        איפוס
-      </button>
     </div>
   );
 };

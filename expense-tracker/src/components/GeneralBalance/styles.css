@@ -198,3 +198,35 @@
     width: 95%;
   }
 }
+
+.monthly-balance-chart {
+  width: 100%;
+  max-width: 1000px;
+  height: 400px;
+  position: relative;
+}
+
+.monthly-balance-chart canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Thinner chart lines */
+.monthly-balance-chart .chart-line {
+  stroke-width: 1.5px !important;
+  stroke: #4a90e2; /* Keep professional blue color */
+}
+
+/* Adjust Y-axis numbers to be more to the left */
+.monthly-balance-chart .y-axis text {
+  text-anchor: end; /* Align text to the end (left) */
+  transform: translateX(-5px); /* Move slightly to the left */
+  font-size: 0.85rem; /* Slightly smaller text */
+  fill: #555; /* Softer gray for a pro look */
+}
+
+/* Refine grid lines */
+.monthly-balance-chart .chart-grid line {
+  stroke: #ddd; /* Light gray */
+  stroke-dasharray: 3 3; /* Dashed for subtle effect */
+}

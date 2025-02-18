@@ -246,7 +246,7 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
                 contentStyle={{ direction: 'rtl' }}
               />
               <Legend />
-              <Bar dataKey="amount" />
+              <Bar dataKey="amount" fill="#4a90e2" barSize={20} />  {/* Adjust the barSize value */}
             </BarChart>
           </ResponsiveContainer>
         </div>
