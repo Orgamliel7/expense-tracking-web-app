@@ -38,10 +38,25 @@ interface MonthlyData {
   }[];
 }
 
+const getAllMonths = (startDate: Date): string[] => {
+  const months: string[] = [];
+  const currentDate = new Date();
+  let date = new Date(startDate);
+  
+  while (date <= currentDate) {
+    months.push(`${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`);
+    date.setMonth(date.getMonth() + 1);
+  }
+  return months;
+};
+
 const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked, onClose }) => {
   const [customExpenses, setCustomExpenses] = useState<CustomExpense[]>([]);
   const [customIncomes, setCustomIncomes] = useState<MonthlyData['customIncomes']>([]);
   const [selectedMonth, setSelectedMonth] = useState<string>('');
+  const [availableMonths, setAvailableMonths] = useState<string[]>([]);
+
+
   const [newExpense, setNewExpense] = useState({
     amount: '',
     description: '',
@@ -55,11 +70,24 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
 
   // Set default date and selected month on component mount
   useEffect(() => {
-    const jerusalemDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' });
-    const dateObj = new Date(jerusalemDate);
-    const monthKey = `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
-    setSelectedMonth(monthKey);
-  }, []);
+    const checkNewMonth = () => {
+      const jerusalemDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' });
+      const currentMonth = `${String(new Date(jerusalemDate).getMonth() + 1).padStart(2, '0')}/${new Date(jerusalemDate).getFullYear()}`;
+      
+      if (currentMonth !== selectedMonth) {
+        setSelectedMonth(currentMonth);
+        // Update available months
+        const startDate = new Date(jerusalemDate);
+        startDate.setMonth(startDate.getMonth() - 6);
+        setAvailableMonths(getAllMonths(startDate));
+      }
+    };
+
+    checkNewMonth();
+    const interval = setInterval(checkNewMonth, 24 * 60 * 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, [selectedMonth]);
 
   // Fetch custom data from Firestore
   useEffect(() => {
@@ -230,7 +258,7 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
             onChange={(e) => setSelectedMonth(e.target.value)}
             className="month-select"
           >
-            {Object.keys(monthlyData).map(month => (
+            {availableMonths.map(month => (
               <option key={month} value={month}>{month}</option>
             ))}
           </select>
