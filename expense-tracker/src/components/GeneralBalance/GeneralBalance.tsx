@@ -105,10 +105,17 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
       return `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
     };
 
-    // Process regular expenses
+    // Process regular expenses from the expenses prop
     expenses.forEach(expense => {
       const monthKey = processDate(expense.date);
       processMonth(monthKey);
+      const customExpense: CustomExpense = {
+        ...expense,
+        id: Date.now().toString(),
+        description: expense.category,
+        displayAmount: `₪${expense.amount.toFixed(2)}`
+      };
+      data[monthKey].expenses.push(customExpense);
     });
 
     // Process custom expenses
@@ -133,19 +140,14 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
     const selectedData = monthlyData[selectedMonth];
     if (!selectedData) return [];
 
-    const customExpensesTotal = selectedData.expenses.reduce((sum, exp) => sum + exp.amount, 0);
-    const fixedExpensesTotal = selectedData.fixedExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-    const customIncomesTotal = selectedData.customIncomes.reduce((sum, inc) => sum + inc.amount, 0);
-    const fixedIncomesTotal = selectedData.fixedIncomes.reduce((sum, inc) => sum + inc.amount, 0);
-
-    const totalExpenses = customExpensesTotal + fixedExpensesTotal;
-    const totalIncomes = customIncomesTotal + fixedIncomesTotal;
+    const totalExpenses = selectedData.expenses.reduce((sum, exp) => sum + exp.amount, 0) +
+                         selectedData.fixedExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const totalIncomes = selectedData.customIncomes.reduce((sum, inc) => sum + inc.amount, 0) +
+                        selectedData.fixedIncomes.reduce((sum, inc) => sum + inc.amount, 0);
 
     return [
-      { name: 'הוצאות משתנות', amount: customExpensesTotal, fill: '#FCA5A5' },
-      { name: 'הוצאות קבועות', amount: fixedExpensesTotal, fill: '#F87171' },
-      { name: 'הכנסות משתנות', amount: customIncomesTotal, fill: '#86EFAC' },
-      { name: 'הכנסות קבועות', amount: fixedIncomesTotal, fill: '#4ADE80' },
+      { name: 'הוצאות', amount: totalExpenses, fill: '#F87171' },
+      { name: 'הכנסות', amount: totalIncomes, fill: '#4ADE80' },
       { name: 'מאזן חודשי', amount: totalIncomes - totalExpenses, fill: '#60A5FA' }
     ];
   }, [monthlyData, selectedMonth]);
@@ -240,13 +242,13 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
             <BarChart data={chartData} margin={{ top: 20, right: 30, left: 30, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
-              <YAxis domain={[0, 'auto']} tick={{ dx: -10 }} />  {/* Ensure bars start from 0 + Shift labels */}
+              <YAxis domain={[0, 'auto']} tick={{ dx: -10 }} />
               <Tooltip 
                 formatter={(value) => `₪${Math.abs(Number(value)).toFixed(2)}`}
                 contentStyle={{ direction: 'rtl' }}
               />
               <Legend />
-              <Bar dataKey="amount" fill="#4a90e2" barSize={15} />  {/* Adjust bar thickness */}
+              <Bar dataKey="amount" fill="#4a90e2" barSize={15} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -339,15 +341,7 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
             <div className="transactions-grid">
               <div className="custom-expenses">
                 <h4>הוצאות</h4>
-                {customExpenses
-                  .filter(expense => {
-                    const expMonth = new Date(expense.date).toLocaleString('en-US', { 
-                      month: '2-digit', 
-                      year: 'numeric',
-                      timeZone: 'Asia/Jerusalem'
-                    });
-                    return expMonth === selectedMonth.replace('/', '/');
-                  })
+                {monthlyData[selectedMonth]?.expenses
                   .map((expense) => (
                     <div key={expense.id} className="transaction-item expense">
                       <span className="date">
@@ -355,16 +349,18 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
                       </span>
                       <span className="description">{expense.description}</span>
                       <span className="amount">₪{expense.amount.toFixed(2)}</span>
-                      <button 
-                        onClick={() => {
-                          const newExpenses = customExpenses.filter(e => e.id !== expense.id);
-                          setCustomExpenses(newExpenses);
-                          updateFirestore(newExpenses, customIncomes);
-                        }}
-                        className="delete-btn"
-                      >
-                        ×
-                      </button>
+                      {customExpenses.some(e => e.id === expense.id) && (
+                        <button 
+                          onClick={() => {
+                            const newExpenses = customExpenses.filter(e => e.id !== expense.id);
+                            setCustomExpenses(newExpenses);
+                            updateFirestore(newExpenses, customIncomes);
+                          }}
+                          className="delete-btn"
+                        >
+                          ×
+                        </button>
+                      )}
                     </div>
                   ))}
               </div>
@@ -385,10 +381,10 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
                       <span className="date">
                         {new Date(income.date).toLocaleDateString('he-IL')}
                       </span>
-                    <span className="description">{income.description}</span>
-                    <span className="amount">₪{income.amount.toFixed(2)}</span>
-                    <button 
-                      onClick={() => {
+                      <span className="description">{income.description}</span>
+                      <span className="amount">₪{income.amount.toFixed(2)}</span>
+                      <button 
+                        onClick={() => {
                         const newIncomes = customIncomes.filter(i => i.id !== income.id);
                         setCustomIncomes(newIncomes);
                         updateFirestore(customExpenses, newIncomes);
