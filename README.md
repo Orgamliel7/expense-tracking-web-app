@@ -1,52 +1,70 @@
-# 📊 מעקב הוצאות - Expense Tracker
+# 📊 **מעקב הוצאות** - Expense Tracker
 
-Welcome to **מעקב הוצאות** (Expense Tracker), a simple yet powerful application designed to help you track and manage your expenses. With a beautiful and intuitive interface, you can monitor your financial balance across multiple categories, easily add new expenses, and generate reports in various formats.
+Welcome to **מעקב הוצאות** (Expense Tracker), a simple yet powerful app to help you track and manage your expenses. With an intuitive interface, you can monitor your financial balance, categorize your spending, add new expenses, and generate insightful reports and analytics.
 
 ---
 
-## 🚀 Features
+## 🚀 **Features**
 
 - 💰 **Track Expenses**: Add new expenses by selecting a category, entering the amount, and adding an optional note.
-- 📉 **Real-time Balance**: See your available balance for each category, with real-time progress indicators.
+- 📉 **Real-time Balance**: Monitor your available balance for each category in real-time, with progress indicators.
 - 🔄 **Reset Balances**: Reset any category balance back to its initial value.
-- 📈 **Expense Report**: View all your expenses, categorized and sorted by date, in a detailed report.
-- 📊 **Analytics**: Visualize your spending habits with beautiful charts.
-- 📥 **Excel Export**: Download your expense data as an Excel file for further analysis.
+- 📈 **Expense Report**: View a detailed, categorized list of your expenses, sorted by date.
+- 📊 **Analytics**: Visualize your spending patterns with beautiful, dynamic charts.
+- 📥 **Excel Export**: Download your expense data as an Excel file for further analysis or record-keeping.
+- 📅 **Past Reports**: Access and review your monthly expense reports for trend analysis.
+- 🏦 **Admin Panel**: Control user data, manage categories, and review overall expense history with an admin panel.
+- 🖼️ **Expense Upload**: Import and organize bulk expenses via an easy-to-use uploader.
 
 ---
 
-## 🎨 Technologies Used
+## 🎨 **Technologies Used**
 
-- **React**: Building the front end with React for a dynamic, modern user experience.
-- **Firebase**: Storing data securely in Firebase Firestore for seamless synchronization.
-- **Recharts**: Beautiful pie charts and analytics to visualize your spending.
-- **XLSX**: Export your data to Excel with this powerful library.
-- **Styled Components**: Custom styles to ensure a beautiful and responsive design.
+- **React**: Building the front-end with React for a modern, dynamic user experience.
+- **Firebase**: Secure cloud storage and seamless data synchronization via Firebase Firestore.
+- **Recharts**: Stunning pie charts and other visualizations to display spending trends.
+- **XLSX**: Export data to Excel format for easier analysis and sharing.
+- **Styled Components**: Custom-styled components to ensure a responsive, attractive UI.
+- **TypeScript**: Utilizing TypeScript for type safety and better code organization.
+- **Custom Hooks**: Leveraging hooks like `useLoading` and `useKeyboardShortcuts` to improve app functionality and user experience.
 
 ---
 
-## 🏗️ Project Structure
+## 🏗️ **Project Structure**
 
 ```
 src/
 ├── components/
-│   ├── App.js          # Main application component
-│   ├── Analytics.js    # Analytics component for visualizing expenses
-│   ├── styles.css      # Custom styles for the application
-│   └── types.js        # TypeScript types for categories and expenses
-├── firebase.js         # Firebase configuration and initialization
-└── index.js            # Entry point for the React application
+│   ├── CategoryButtons/    # Category selection buttons
+│   ├── ExpenseForm/        # Form for submitting new expenses
+│   ├── BalanceList/        # Displays current balance per category
+│   ├── ReportModal/        # Modal for viewing detailed expense reports
+│   ├── Analytics/          # Chart visualization of expenses
+│   ├── ExpenseUploader/    # Component for bulk importing expenses
+│   ├── ActionButtons/      # Controls to trigger different app views
+│   ├── SmallCash/          # Small expenses summary
+│   ├── AdminPanel/         # Admin panel for managing categories and reports
+│   └── GeneralBalance/     # General balance view
+├── services/               
+│   └── firebase.js         # Firebase configuration and Firestore interactions
+├── hooks/                  
+│   ├── useKeyboardShortcuts.js # Custom hook for keyboard shortcuts
+│   ├── useLoading.js         # Custom hook to handle loading states
+├── types/                  
+│   ├── index.ts            # TypeScript types for categories, expenses, etc.
+├── styles.css              # Global styles for the app
+└── App.tsx                 # Main application component
 ```
 
 ---
 
-## 🧑‍💻 How to Run
+## 🧑‍💻 **How to Run**
 
-1. **Clone this repository**:
+1. **Clone the repository**:
    ```bash
    git clone https://github.com/Orgamliel7/expense-tracker.git
    ```
-   
+
 2. **Install dependencies**:
    ```bash
    cd expense-tracker
@@ -58,33 +76,33 @@ src/
    npm start
    ```
 
-4. Open your browser and go to `http://localhost:3000` to start using the app!
+4. Open your browser and navigate to `http://localhost:3000` to start using the app!
 
 ---
 
-## 💡 How to Use
+## 💡 **How to Use**
 
-1. **Select a Category**: Choose a category from the available list (e.g., Groceries, Entertainment).
-2. **הזן סכום**: Input the amount of your expense.
-3. **Optional Note**: Add a note (optional) to describe the expense.
-4. **Submit**: Click "הפחת הוצאה" to log your expense and see the balance update.
-5. **View Report**: Click "דו"ח הוצאות" to view a detailed list of all expenses.
-6. **Download Excel**: Click "Excel הורד כקובץ" to download your expense data in an Excel file.
-
----
-
-## ✨ Future Enhancements
-
-- 🌍 Multi-language support (currently in Hebrew)
-- 🔐 User authentication for secure data management
-- 🧑‍🤝‍🧑 Expense sharing and team management
-- 📅 Budget planning and forecasting features
+1. **Select a Category**: Choose a category (e.g., Groceries, Entertainment).
+2. **Enter Amount**: Input the amount of your expense.
+3. **Optional Note**: Add a note to describe the expense.
+4. **Submit**: Click "הפחת הוצאה" to log your expense.
+5. **View Report**: Click "דו"ח הוצאות" to see a detailed list of all expenses.
+6. **Export to Excel**: Download your data in Excel format by clicking "Excel הורד כקובץ."
 
 ---
 
-## 🤝 Contributing
+## ✨ **Future Enhancements**
 
-We welcome contributions! If you have an idea for an improvement, feel free to fork the repository and create a pull request. Here's how you can contribute:
+- 🌍 **Multi-language support**: Adding language options (currently in Hebrew).
+- 🔐 **User authentication**: Secure data with user logins.
+- 🧑‍🤝‍🧑 **Expense sharing**: Collaborate with others to manage shared expenses.
+- 📅 **Budget planning**: Add features for budgeting and forecasting expenses.
+
+---
+
+## 🤝 **Contributing**
+
+We welcome contributions! If you'd like to help improve this project, follow these steps:
 
 1. Fork the repository
 2. Create a new branch (`git checkout -b feature-xyz`)
@@ -94,11 +112,12 @@ We welcome contributions! If you have an idea for an improvement, feel free to f
 
 ---
 
-## 📄 License
+## 📄 **License**
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-### 🌟 Enjoy tracking your expenses!
+### 🌟 **Enjoy tracking your expenses!**
 
+---
