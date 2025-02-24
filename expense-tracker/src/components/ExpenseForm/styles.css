@@ -56,3 +56,9 @@
       max-width: none;
     }
   }
+
+  .input-with-voice {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }

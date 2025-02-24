@@ -213,6 +213,7 @@ function App() {
           <ExpenseForm
             selectedCategory={selectedCategory}
             onSubmit={handleExpenseSubmit}
+            onCategorySelect={setSelectedCategory}
           />
 
           <BalanceList
