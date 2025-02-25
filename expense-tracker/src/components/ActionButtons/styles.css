@@ -1,81 +1,97 @@
-.report-buttons {
+/* Grid layout for buttons */
+.action-buttons-grid {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   gap: 10px;
-  margin: 20px 0;
+  margin: 15px 0;
+  width: 100%;
 }
 
-.report-button,
-.excel-button,
-.past-reports-button {
-  padding: 10px 20px;
-  font-size: 16px;
+.action-buttons-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+}
+
+/* Base button styles */
+.report-button, 
+.excel-button, 
+.past-reports-button,
+.small-cash-button,
+.general-button {
+  padding: 12px 8px;
+  font-size: 14px;
   font-weight: 600;
   border: none;
-  border-radius: 20px;
+  border-radius: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
   transition: background-color 0.3s, box-shadow 0.3s;
   color: white;
+  height: 100%;
+  min-height: 50px;
+  text-align: center;
+  width: 100%;
 }
 
-.report-button:hover,
-.excel-button:hover,
-.past-reports-button:hover {
-  opacity: 0.9;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+/* Button specific styles */
+.report-button {
+  background-color: #4CAF50; /* Green */
+}
+
+.analytics-button {
+  background-color: #2196F3; /* Blue */
+}
+
+.excel-button {
+  background-color: #007E33; /* Dark green for Excel */
+  gap: 5px;
 }
 
 .past-reports-button {
   background-color: #F1A7B1;
-  color: white;
-}
-
-.past-reports-button:disabled {
-  background-color: #d4d4d4;
 }
 
 .small-cash-button {
-  background-color: #40E0D0; /* Turquoise color */
-  color: white;
-  padding: 10px 20px;
-  font-size: 16px;
-  font-weight: 600;
-  border: none;
-  border-radius: 20px; /* Match the border radius of other buttons */
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  transition: background-color 0.3s, box-shadow 0.3s;
-}
-
-.small-cash-button:hover {
-  background-color: #48C9B0; /* Slightly darker turquoise */
-  opacity: 0.9;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  background-color: #40E0D0; /* Turquoise */
 }
 
 .general-button {
-  background-color: #F5F5DC; /* Purple shade that fits well with a purple background */
+  background-color: #F5F5DC; /* Light beige */
   color: #383831;
-  padding: 10px 20px;
-  font-size: 16px;
-  font-weight: 600;
-  border: none;
-  border-radius: 20px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  transition: background-color 0.3s, box-shadow 0.3s;
 }
 
+/* Hover effects */
+.report-button:hover, 
+.excel-button:hover, 
+.past-reports-button:hover,
+.small-cash-button:hover,
 .general-button:hover {
-  background-color: #afafa1; /* Darker purple shade for hover effect */
   opacity: 0.9;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+/* Small-cash button hover */
+.small-cash-button:hover {
+  background-color: #48C9B0;
+}
+
+/* General button hover */
+.general-button:hover {
+  background-color: #afafa1;
+}
+
+/* Responsive adjustments for very small screens */
+@media (max-width: 320px) {
+  .report-button, 
+  .excel-button, 
+  .past-reports-button,
+  .small-cash-button,
+  .general-button {
+    font-size: 12px;
+    padding: 8px 4px;
+  }
+}

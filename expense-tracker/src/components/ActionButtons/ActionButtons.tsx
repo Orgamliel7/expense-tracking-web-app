@@ -10,7 +10,7 @@ interface ActionButtonsProps {
   onShowAnalytics: () => void;
   onShowPastReports: () => void;
   onShowSmallCash: () => void;
-  onShowGeneral: () => void; // Added new prop for general button
+  onShowGeneral: () => void;
 }
 
 export const ActionButtons: React.FC<ActionButtonsProps> = ({
@@ -19,14 +19,13 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   onShowAnalytics,
   onShowPastReports,
   onShowSmallCash,
-  onShowGeneral, // Destructure the new handler
+  onShowGeneral,
 }) => {
   const handleDownloadExcel = () => {
     if (expenses.length === 0) {
       alert('אין הוצאות להורדה');
       return;
     }
-
     const worksheet = XLSX.utils.json_to_sheet(expenses);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Expenses');
@@ -34,26 +33,29 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   };
 
   return (
-    <div className="report-buttons">
-      <button onClick={onShowReport} className="report-button">
-        דו"ח הוצאות
-      </button>
-      <button onClick={onShowAnalytics} className="report-button">
-        אנליזות
-      </button>
-      <button className="past-reports-button" onClick={onShowPastReports}>
-        דו"חות עבר
-      </button>
-      <button onClick={handleDownloadExcel} className="excel-button">
-        <FaFileExcel />
-        Excel הורד כקובץ
-      </button>
-      <button onClick={onShowSmallCash} className="small-cash-button">
-        קופה קטנה
-      </button>
-      <button onClick={onShowGeneral} className="general-button">
-        כללי
-      </button>
+    <div className="action-buttons-grid">
+      <div className="action-buttons-row">
+        <button onClick={onShowGeneral} className="general-button">
+          כללי
+        </button>
+        <button onClick={onShowSmallCash} className="small-cash-button">
+          קופה קטנה
+        </button>
+        <button onClick={onShowReport} className="report-button">
+          דו"ח הוצאות
+        </button>
+      </div>
+      <div className="action-buttons-row">
+        <button onClick={handleDownloadExcel} className="excel-button">
+          <FaFileExcel /> הורד כקובץ Excel
+        </button>
+        <button onClick={onShowAnalytics} className="report-button analytics-button">
+          אנליזות
+        </button>
+        <button className="past-reports-button" onClick={onShowPastReports}>
+          דו"חות עבר
+        </button>
+      </div>
     </div>
   );
 };
