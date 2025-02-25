@@ -2,19 +2,22 @@
 .action-buttons-grid {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin: 15px 0;
+  gap: 12px;
+  margin: 18px 0;
   width: 100%;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .action-buttons-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 10px;
   width: 100%;
 }
 
-/* Base button styles */
+/* Base button styles with glass-morphism effect */
 .report-button, 
 .excel-button, 
 .past-reports-button,
@@ -29,59 +32,101 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.3s, box-shadow 0.3s;
+  transition: all 0.3s ease;
   color: white;
   height: 100%;
-  min-height: 50px;
+  min-height: 54px;
   text-align: center;
   width: 100%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
-/* Button specific styles */
+/* Button specific styles - color palette harmonious with purple background */
 .report-button {
-  background-color: #4CAF50; /* Green */
+  background: linear-gradient(135deg, #A367DC 0%, #8A4FD1 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .analytics-button {
-  background-color: #2196F3; /* Blue */
+  background: linear-gradient(135deg, #7986CB 0%, #5C6BC0 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .excel-button {
-  background-color: #007E33; /* Dark green for Excel */
+  background: linear-gradient(135deg, #66BB6A 0%, #43A047 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   gap: 5px;
 }
 
 .past-reports-button {
-  background-color: #F1A7B1;
+  background: linear-gradient(135deg, #EF9A9A 0%, #E57373 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .small-cash-button {
-  background-color: #40E0D0; /* Turquoise */
+  background: linear-gradient(135deg, #4DD0E1 0%, #26C6DA 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .general-button {
-  background-color: #F5F5DC; /* Light beige */
-  color: #383831;
+  background: linear-gradient(135deg, #E1E1B3 0%, #D4D4A7 100%);
+  color: #3E3E35;
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
-/* Hover effects */
+/* Hover effects with subtle animation */
 .report-button:hover, 
 .excel-button:hover, 
 .past-reports-button:hover,
 .small-cash-button:hover,
 .general-button:hover {
-  opacity: 0.9;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 7px 14px rgba(0, 0, 0, 0.2);
 }
 
-/* Small-cash button hover */
+/* Active state */
+.report-button:active, 
+.excel-button:active, 
+.past-reports-button:active,
+.small-cash-button:active,
+.general-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* Button-specific hover refinements */
+.report-button:hover {
+  background: linear-gradient(135deg, #B57AE6 0%, #9A5FE0 100%);
+}
+
+.analytics-button:hover {
+  background: linear-gradient(135deg, #8995D3 0%, #6C7BCF 100%);
+}
+
+.excel-button:hover {
+  background: linear-gradient(135deg, #75C378 0%, #52B356 100%);
+}
+
+.past-reports-button:hover {
+  background: linear-gradient(135deg, #F5A8A8 0%, #EB8484 100%);
+}
+
 .small-cash-button:hover {
-  background-color: #48C9B0;
+  background: linear-gradient(135deg, #5CD6E7 0%, #35CDE0 100%);
 }
 
-/* General button hover */
 .general-button:hover {
-  background-color: #afafa1;
+  background: linear-gradient(135deg, #ECECC4 0%, #E0E0B8 100%);
+}
+
+/* Icon styling */
+.excel-button svg {
+  margin-left: 4px;
+  font-size: 16px;
 }
 
 /* Responsive adjustments for very small screens */
@@ -93,5 +138,6 @@
   .general-button {
     font-size: 12px;
     padding: 8px 4px;
+    min-height: 48px;
   }
 }
