@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { CategoryButtons } from './components/CategoryButtons/CategoryButtons';
 import { ExpenseForm } from './components/ExpenseForm/ExpenseForm';
 import { BalanceList } from './components/BalanceList/BalanceList';
@@ -16,8 +16,6 @@ import { ActionButtons } from './components/ActionButtons/ActionButtons';
 import SmallCash from './components/SmallCash/SmallCash';
 import General from './components/GeneralBalance/GeneralBalance';
 
-
-
 import './styles.css';
 
 function App() {
@@ -30,9 +28,34 @@ function App() {
   const [pastReports, setPastReports] = useState<MonthlyReport[]>([]);
   const [showSmallCash, setShowSmallCash] = useState(false);
   const [showGeneral, setShowGeneral] = useState(false);
-
   
   const { isLoading, error, withLoading } = useLoading();
+
+  // Filter expenses to only include current month
+  const currentMonthExpenses = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    return expenses.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate.getMonth() === currentMonth && 
+             expenseDate.getFullYear() === currentYear;
+    });
+  }, [expenses]);
+
+  // Calculate current month balances based on initial balances and current month expenses
+  const currentMonthBalances = useMemo(() => {
+    // Start with initial balances
+    const calculatedBalances = { ...INITIAL_BALANCE };
+    
+    // Subtract only current month expenses
+    currentMonthExpenses.forEach(expense => {
+      calculatedBalances[expense.category] -= expense.amount;
+    });
+    
+    return calculatedBalances;
+  }, [currentMonthExpenses]);
 
   const updateDataInFirestore = async (updatedBalances: CategoryBalance, updatedExpenses: Expense[]) => {
     const sanitizedBalances = Object.fromEntries(
@@ -187,7 +210,6 @@ function App() {
     }
   };
   
-
   const handleEscape = () => {
     setShowReport(false);
     setShowAnalytics(false);
@@ -214,7 +236,7 @@ function App() {
       ) : (
         <>
           <CategoryButtons
-            balances={balances}
+            balances={currentMonthBalances}
             selectedCategory={selectedCategory}
             onCategorySelect={setSelectedCategory}
           />
@@ -236,21 +258,21 @@ function App() {
           />
 
           <BalanceList
-            balances={balances}
+            balances={currentMonthBalances}
             setBalances={setBalances}
-            expenses={expenses}
+            expenses={currentMonthExpenses}
             updateExpenseData={updateDataInFirestore}
           />
 
           <General 
-            expenses={expenses}
-            balances={balances}
+            expenses={currentMonthExpenses}
+            balances={currentMonthBalances}
             actionBtnClicked={showGeneral}
             onClose={() => setShowGeneral(false)}
           />
 
           <ActionButtons
-            expenses={expenses}
+            expenses={currentMonthExpenses}
             onShowReport={() => setShowReport(true)}
             onShowAnalytics={() => setShowAnalytics(true)}
             onShowPastReports={() => setShowPastReports(true)}  
@@ -259,7 +281,7 @@ function App() {
           />
 
           <SmallCash 
-            expenses={expenses}
+            expenses={currentMonthExpenses}
             actionBtnClicked={showSmallCash}
             onClose={() => setShowSmallCash(false)}
           />
@@ -275,8 +297,8 @@ function App() {
                 return report.month !== currentMonthStr;
               })}
               currentMonth={{
-                expenses: expenses,
-                balances: balances
+                expenses: currentMonthExpenses,
+                balances: currentMonthBalances
               }}
               onClose={() => setShowPastReports(false)}
             />
@@ -294,8 +316,8 @@ function App() {
           )}
           {showAnalytics && (
             <Analytics
-              expenses={expenses}
-              balances={balances}
+              expenses={currentMonthExpenses}
+              balances={currentMonthBalances}
               onClose={() => setShowAnalytics(false)}
             />
           )}
