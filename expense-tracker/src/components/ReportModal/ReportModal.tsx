@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { CategoryBalance, Expense, INITIAL_BALANCE} from '../../types';
 import './styles.css';
 
@@ -19,6 +19,23 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   onClose,
   updateExpenseData,
 }) => {
+  const [currentMonthExpenses, setCurrentMonthExpenses] = useState<Expense[]>([]);
+
+  useEffect(() => {
+    // Filter expenses to only include those from the current month
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    const filtered = expenses.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate.getMonth() === currentMonth && 
+             expenseDate.getFullYear() === currentYear;
+    });
+    
+    setCurrentMonthExpenses(filtered);
+  }, [expenses]);
+
   const handleDeleteExpense = async (expenseToDelete: Expense) => {
     // Create a copy of current balances
     const updatedBalances = { ...balances };
@@ -40,20 +57,31 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   };
 
   const handleClearExpenses = async () => {
+    // Get all expenses that are NOT from the current month
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    const nonCurrentMonthExpenses = expenses.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate.getMonth() !== currentMonth || 
+             expenseDate.getFullYear() !== currentYear;
+    });
+    
     // Create a copy of the current balances to avoid direct mutations
     const restoredBalances = { ...balances };
   
-    // Add back the amounts of cleared expenses to their corresponding categories
-    expenses.forEach((expense) => {
+    // Add back the amounts of only current month expenses to their corresponding categories
+    currentMonthExpenses.forEach((expense) => {
       restoredBalances[expense.category] += expense.amount; // Add the amount back to the balance
     });
   
-    // Update the states with the restored balances and clear the expenses list
+    // Update the states with the restored balances and keep only non-current month expenses
     setBalances(restoredBalances);
-    setExpenses([]); // Clear the list of expenses
+    setExpenses(nonCurrentMonthExpenses); // Keep expenses that are not from current month
   
     // Update the backend data accordingly
-    await updateExpenseData(restoredBalances, []);
+    await updateExpenseData(restoredBalances, nonCurrentMonthExpenses);
   };
 
   const formatAmount = (amount: number) => {
@@ -88,15 +116,25 @@ export const ReportModal: React.FC<ReportModalProps> = ({
     }, {} as Record<string, Expense[]>);
   };
 
-  const sortedExpenses = [...expenses].sort((a, b) => 
+  const sortedExpenses = [...currentMonthExpenses].sort((a, b) => 
     new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
   const groupedExpenses = groupExpensesByDate(sortedExpenses);
 
+  // Get current month name in Hebrew
+  const getCurrentMonthName = () => {
+    const now = new Date();
+    const monthNames = [
+      'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
+      'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
+    ];
+    return monthNames[now.getMonth()];
+  };
+
   return (
     <div className="report-modal">
-      <h2>דו"ח הוצאות</h2>
+      <h2>דו"ח הוצאות - {getCurrentMonthName()} {new Date().getFullYear()}</h2>
       {sortedExpenses.length > 0 ? (
         <>
           <ul className="expense-list">
@@ -129,7 +167,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
           </button>
         </>
       ) : (
-        <p>אין הוצאות עדיין</p>
+        <p>אין הוצאות בחודש הנוכחי</p>
       )}
       <button onClick={onClose} className="close-button">
         סגור דו"ח

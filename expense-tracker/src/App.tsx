@@ -110,6 +110,23 @@ function App() {
   };
 
   useEffect(() => {
+    // Check for reset when app loads
+    withLoading(checkMonthlyReset);
+    
+    // Set up a daily check at midnight
+    const now = new Date();
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    const timeUntilMidnight = tomorrow.getTime() - now.getTime();
+    
+    const midnightTimer = setTimeout(() => {
+      withLoading(checkMonthlyReset);
+    }, timeUntilMidnight);
+    
+    return () => clearTimeout(midnightTimer);
+  }, []);
+
+  useEffect(() => {
     const fetchPastReports = async () => {
       const docRef = doc(db, 'balances', 'pastReports');
       const docSnap = await getDoc(docRef);
@@ -133,6 +150,8 @@ function App() {
         if (data.expenses) setExpenses(data.expenses as Expense[]);
 
         await createInitialPastReport();
+        await checkMonthlyReset();
+
       }
     };
 
