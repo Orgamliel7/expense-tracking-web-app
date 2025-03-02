@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CategoryBalance } from '../../types';
+import { categorySynonyms } from './CategorySynonyms';
 import './styles.css';
 
 interface VoiceRecognitionButtonProps {
@@ -123,26 +124,6 @@ export const VoiceRecognitionButton: React.FC<VoiceRecognitionButtonProps> = ({
       'טיפוח והנעלה',
       'סופר'
     ];
-    
-    // Also add some common synonyms that might be used in speech
-    const categorySynonyms: Record<string, keyof CategoryBalance> = {
-      'תדלוק': 'דלק',
-      'בנזין': 'דלק',
-      'מסעדה': 'מסעדות',
-      'אוכל בחוץ': 'מסעדות',
-      'קפה': 'מסעדות',
-      'חופש': 'חופשות',
-      'נופש': 'חופשות',
-      'טיול': 'חופשות',
-      'בילוי': 'בילויים',
-      'בגד': 'בגדים',
-      'חבר': 'חברים',
-      'חברה': 'חברים',
-      'טיפוח': 'טיפוח והנעלה',
-      'נעליים': 'טיפוח והנעלה',
-      'מכולת': 'סופר',
-      'קניות': 'סופר'
-    };
     
     // Try to identify category from text
     let detectedCategory: keyof CategoryBalance | undefined = undefined;
