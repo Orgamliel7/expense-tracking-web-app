@@ -38,8 +38,11 @@ interface MonthlyData {
   }[];
 }
 
-const getAllMonths = (startDate: Date): string[] => {
+const getAllMonths = (): string[] => {
   const months: string[] = [];
+  
+  // Start from February 2025
+  const startDate = new Date(2025, 1, 1); // Month is 0-indexed, so 1 is February
   const currentDate = new Date();
   let date = new Date(startDate);
   
@@ -47,6 +50,7 @@ const getAllMonths = (startDate: Date): string[] => {
     months.push(`${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`);
     date.setMonth(date.getMonth() + 1);
   }
+  
   return months;
 };
 
@@ -55,7 +59,6 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
   const [customIncomes, setCustomIncomes] = useState<MonthlyData['customIncomes']>([]);
   const [selectedMonth, setSelectedMonth] = useState<string>('');
   const [availableMonths, setAvailableMonths] = useState<string[]>([]);
-
 
   const [newExpense, setNewExpense] = useState({
     amount: '',
@@ -68,25 +71,19 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
     date: new Date().toISOString().split('T')[0]
   });
 
-  // Set default date and selected month on component mount
+  // Set available months and default selected month on component mount
   useEffect(() => {
-    const checkNewMonth = () => {
-      const jerusalemDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' });
-      const currentMonth = `${String(new Date(jerusalemDate).getMonth() + 1).padStart(2, '0')}/${new Date(jerusalemDate).getFullYear()}`;
-      
-      if (currentMonth !== selectedMonth) {
-        setSelectedMonth(currentMonth);
-        // Update available months
-        const startDate = new Date(jerusalemDate);
-        startDate.setMonth(startDate.getMonth() - 6);
-        setAvailableMonths(getAllMonths(startDate));
-      }
-    };
-
-    checkNewMonth();
-    const interval = setInterval(checkNewMonth, 24 * 60 * 60 * 1000);
+    const jerusalemDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' });
+    const currentMonth = `${String(new Date(jerusalemDate).getMonth() + 1).padStart(2, '0')}/${new Date(jerusalemDate).getFullYear()}`;
     
-    return () => clearInterval(interval);
+    // Get all months from February 2025 to current month
+    const months = getAllMonths();
+    setAvailableMonths(months);
+    
+    // Set default month to current month if not already set
+    if (!selectedMonth) {
+      setSelectedMonth(currentMonth);
+    }
   }, [selectedMonth]);
 
   // Fetch custom data from Firestore
@@ -109,25 +106,24 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
   const monthlyData = useMemo(() => {
     const data: Record<string, MonthlyData> = {};
     
-    const processMonth = (monthKey: string) => {
-      if (!data[monthKey]) {
-        data[monthKey] = {
-          month: monthKey,
-          expenses: [],
-          customIncomes: [],
-          fixedExpenses: Object.entries(generalBalance['fixed-expenses']).map(([description, amount]) => ({
-            description,
-            amount: Number(amount)
-          })),
-          fixedIncomes: Object.entries(generalBalance['fixed-incomes']).map(([description, amount]) => ({
-            description,
-            amount: Number(amount)
-          }))
-        };
-      }
-    };
-
-    // Process all expenses and incomes
+    // Initialize data for all available months
+    availableMonths.forEach(monthKey => {
+      data[monthKey] = {
+        month: monthKey,
+        expenses: [],
+        customIncomes: [],
+        fixedExpenses: Object.entries(generalBalance['fixed-expenses']).map(([description, amount]) => ({
+          description,
+          amount: Number(amount)
+        })),
+        fixedIncomes: Object.entries(generalBalance['fixed-incomes']).map(([description, amount]) => ({
+          description,
+          amount: Number(amount)
+        }))
+      };
+    });
+    
+    // Process date string to get month/year format
     const processDate = (date: string) => {
       const dateObj = new Date(date);
       return `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
@@ -136,32 +132,35 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
     // Process regular expenses from the expenses prop
     expenses.forEach(expense => {
       const monthKey = processDate(expense.date);
-      processMonth(monthKey);
-      const customExpense: CustomExpense = {
-        ...expense,
-        id: Date.now().toString(),
-        description: expense.category,
-        displayAmount: `₪${expense.amount.toFixed(2)}`
-      };
-      data[monthKey].expenses.push(customExpense);
+      if (data[monthKey]) {
+        const customExpense: CustomExpense = {
+          ...expense,
+          id: `regular-${expense.date}-${expense.amount}`,
+          description: expense.category,
+          displayAmount: `₪${expense.amount.toFixed(2)}`
+        };
+        data[monthKey].expenses.push(customExpense);
+      }
     });
 
     // Process custom expenses
     customExpenses.forEach(expense => {
       const monthKey = processDate(expense.date);
-      processMonth(monthKey);
-      data[monthKey].expenses.push(expense);
+      if (data[monthKey]) {
+        data[monthKey].expenses.push(expense);
+      }
     });
 
     // Process custom incomes
     customIncomes.forEach(income => {
       const monthKey = processDate(income.date);
-      processMonth(monthKey);
-      data[monthKey].customIncomes.push(income);
+      if (data[monthKey]) {
+        data[monthKey].customIncomes.push(income);
+      }
     });
 
     return data;
-  }, [expenses, customExpenses, customIncomes]);
+  }, [expenses, customExpenses, customIncomes, availableMonths]);
 
   // Get chart data for selected month
   const chartData = useMemo(() => {
@@ -395,15 +394,7 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
 
               <div className="custom-incomes">
                 <h4>הכנסות</h4>
-                {customIncomes
-                  .filter(income => {
-                    const incMonth = new Date(income.date).toLocaleString('en-US', { 
-                      month: '2-digit', 
-                      year: 'numeric',
-                      timeZone: 'Asia/Jerusalem'
-                    });
-                    return incMonth === selectedMonth.replace('/', '/');
-                  })
+                {monthlyData[selectedMonth]?.customIncomes
                   .map((income) => (
                     <div key={income.id} className="transaction-item income">
                       <span className="date">
@@ -413,22 +404,22 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
                       <span className="amount">₪{income.amount.toFixed(2)}</span>
                       <button 
                         onClick={() => {
-                        const newIncomes = customIncomes.filter(i => i.id !== income.id);
-                        setCustomIncomes(newIncomes);
-                        updateFirestore(customExpenses, newIncomes);
-                      }}
-                      className="delete-btn"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
+                          const newIncomes = customIncomes.filter(i => i.id !== income.id);
+                          setCustomIncomes(newIncomes);
+                          updateFirestore(customExpenses, newIncomes);
+                        }}
+                        className="delete-btn"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
   );
 };
 
