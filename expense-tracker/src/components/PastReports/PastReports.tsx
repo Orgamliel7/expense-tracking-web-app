@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MonthlyReport, COLORS, CategoryBalance, Expense } from '../../types';
+import { db } from '../../services/firebase'; 
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import './styles.css';
 
 interface PastReportsModalProps {
@@ -23,38 +25,80 @@ export const PastReportsModal: React.FC<PastReportsModalProps> = ({
 }) => {
   const [expandedReports, setExpandedReports] = useState<Set<string>>(new Set());
   const [filteredReports, setFilteredReports] = useState<MonthlyReport[]>([]);
-  
+  const [message, setMessage] = useState<string>('');
+  const [expensesData, setExpensesData] = useState<Expense[]>([]); // To store fetched expenses
+
   const formatAmount = (amount: number) => `₪${Math.abs(amount).toLocaleString()}`;
-  
+
   const currentMonthStr = new Date().toLocaleString('he-IL', { 
     month: 'long', 
     year: 'numeric' 
   });
 
   useEffect(() => {
-    // Filter out any empty reports (no expenses)
+    const fetchExpenses = async () => {
+      try {
+        // Fetch expenses from Firebase (adjust collection and path as necessary)
+        const expensesSnapshot = await getDocs(collection(db, 'expenses'));
+        const expensesList: Expense[] = [];
+        expensesSnapshot.forEach((doc) => {
+          const data = doc.data() as Expense;
+          
+          // Parse data
+          const parsedExpense: Expense = {
+            category: data.category,
+            amount: parseFloat(data.amount) || 0, // Ensure amount is a number
+            note: data.note || '', // If no note, set to empty string
+            date: new Date(data.date).toISOString() // Parse date
+          };
+          
+          expensesList.push(parsedExpense);
+        });
+    
+        setExpensesData(expensesList);  // Set expenses data from Firebase
+      } catch (error) {
+        setMessage('Error fetching expenses');
+        console.error('Error fetching expenses:', error);
+      }
+    };
+
+    fetchExpenses();
+  }, []);
+
+  useEffect(() => {
     const nonEmptyReports = pastReports.filter(report => 
       report.expenses && report.expenses.length > 0
     );
-
-    // For your specific case: ensure we have February 2025
+  
     const februaryExists = nonEmptyReports.some(report => 
       report.month.includes('פברואר') && report.month.includes('2025')
     );
-
+  
     if (!februaryExists) {
-      // Create February 2025 report if needed (this is just for your specific case)
       const februaryReport: MonthlyReport = {
         month: 'פברואר 2025',
-        balances: { ...currentMonth.balances }, // Using a copy of current balances as a placeholder
-        expenses: [] // Start with empty expenses - you'll need to populate this from Firestore if you have the data
+        balances: { ...currentMonth.balances },
+        expenses: [] 
       };
-      
       setFilteredReports([...nonEmptyReports, februaryReport]);
     } else {
       setFilteredReports(nonEmptyReports);
     }
+  
+    // Parsing balance values to ensure they are numbers
+    const parsedReports = nonEmptyReports.map(report => ({
+      ...report,
+      balances: Object.fromEntries(
+        Object.entries(report.balances).map(([category, amount]) => [
+          category, 
+          parseFloat(amount) || 0  // Ensure balances are numbers
+        ])
+      ),
+    }));
+  
+    setFilteredReports(parsedReports); // Update filtered reports
   }, [pastReports, currentMonth.balances]);
+  
 
   const toggleReport = (month: string) => {
     setExpandedReports(prev => {
@@ -68,14 +112,12 @@ export const PastReportsModal: React.FC<PastReportsModalProps> = ({
     });
   };
 
-  // Sort the reports chronologically, with most recent first
   const sortedReports = [...filteredReports].sort((a, b) => {
-    // Extract month number from Hebrew month name
     const hebrewMonths = [
       'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
       'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
     ];
-    
+
     const getMonthNumber = (monthString: string) => {
       for (let i = 0; i < hebrewMonths.length; i++) {
         if (monthString.includes(hebrewMonths[i])) {
@@ -84,24 +126,23 @@ export const PastReportsModal: React.FC<PastReportsModalProps> = ({
       }
       return -1;
     };
-    
+
     const getYearNumber = (monthString: string) => {
       const yearMatch = monthString.match(/\d{4}/);
       return yearMatch ? parseInt(yearMatch[0]) : 0;
     };
-    
+
     const aYear = getYearNumber(a.month);
     const bYear = getYearNumber(b.month);
-    
-    if (aYear !== bYear) return bYear - aYear; // Newer years first
-    
+
+    if (aYear !== bYear) return bYear - aYear;
+
     const aMonth = getMonthNumber(a.month);
     const bMonth = getMonthNumber(b.month);
-    
-    return bMonth - aMonth; // Newer months first
+
+    return bMonth - aMonth;
   });
 
-  // Add current month at the beginning
   const allReports = [
     {
       month: currentMonthStr,
@@ -109,14 +150,13 @@ export const PastReportsModal: React.FC<PastReportsModalProps> = ({
     },
     ...sortedReports
   ];
-
+  
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) {
-        return dateString; // Return original if parsing fails
+        return dateString; // If the date is invalid, return as is
       }
-      
       return date.toLocaleString('he-IL', {
         day: '2-digit',
         month: '2-digit',
@@ -128,6 +168,7 @@ export const PastReportsModal: React.FC<PastReportsModalProps> = ({
       return dateString;
     }
   };
+  
 
   return (
     <div className="past-reports-modal">
@@ -147,9 +188,7 @@ export const PastReportsModal: React.FC<PastReportsModalProps> = ({
             allReports.map((report, index) => (
               <div key={report.month} className="report-card">
                 <div 
-                  className={`report-header ${
-                    expandedReports.has(report.month) ? 'expanded' : ''
-                  } ${index === 0 ? 'current-month' : ''}`}
+                  className={`report-header ${expandedReports.has(report.month) ? 'expanded' : ''} ${index === 0 ? 'current-month' : ''}`}
                   onClick={() => toggleReport(report.month)}
                 >
                   <h3>
@@ -188,33 +227,32 @@ export const PastReportsModal: React.FC<PastReportsModalProps> = ({
                         <p>לא בוצעו הוצאות החודש</p>
                       ) : (
                         <div className="expenses-list">
-                          {/* Sort expenses by date, newest first */}
-                          {[...report.expenses]
+                          {[...report.expenses, ...expensesData]
                             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                             .map((expense, idx) => (
-                            <div 
-                              key={`${report.month}-${idx}`}
-                              className="expense-item"
-                              style={{ 
-                                borderLeft: `4px solid ${COLORS[expense.category as keyof typeof COLORS]}` 
-                              }}
-                            >
-                              <div className="expense-category">
-                                {expense.category}
-                              </div>
-                              <div className="expense-amount">
-                                {formatAmount(expense.amount)}
-                              </div>
-                              {expense.note && (
-                                <div className="expense-note">
-                                  <i>{expense.note}</i>
+                              <div 
+                                key={`${report.month}-${idx}`}
+                                className="expense-item"
+                                style={{ 
+                                  borderLeft: `4px solid ${COLORS[expense.category as keyof typeof COLORS]}` 
+                                }}
+                              >
+                                <div className="expense-category">
+                                  {expense.category}
                                 </div>
-                              )}
-                              <div className="expense-date">
-                                {formatDate(expense.date)}
+                                <div className="expense-amount">
+                                  {formatAmount(expense.amount)}
+                                </div>
+                                {expense.note && (
+                                  <div className="expense-note">
+                                    <i>{expense.note}</i>
+                                  </div>
+                                )}
+                                <div className="expense-date">
+                                  {formatDate(expense.date)}
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            ))}
                         </div>
                       )}
                     </div>
