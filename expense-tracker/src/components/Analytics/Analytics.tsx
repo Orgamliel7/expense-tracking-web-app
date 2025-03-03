@@ -9,6 +9,7 @@ interface AnalyticsProps {
   expenses: Expense[];
   balances: CategoryBalance;
   onClose: () => void;
+  onShowAllTimeAnalytics: () => void; // New prop for showing all-time analytics
 }
 
 interface MonthlyData {
@@ -23,7 +24,7 @@ interface MonthlyData {
   };
 }
 
-const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose }) => {
+const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose, onShowAllTimeAnalytics }) => {
   const [allExpenses, setAllExpenses] = useState<Expense[]>(expenses);
   const [selectedMonth, setSelectedMonth] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
@@ -216,6 +217,12 @@ const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose }) =>
     <div className="analytics-modal">
       <div className="analytics-content">
         <h2>אנליזות</h2>
+        
+        <div className="view-options">
+          <button className="all-time-button" onClick={onShowAllTimeAnalytics}>
+            הצג ניתוח כולל
+          </button>
+        </div>
         
         <div className="chart-container">
           <h3>חסכונות חודשיים</h3>

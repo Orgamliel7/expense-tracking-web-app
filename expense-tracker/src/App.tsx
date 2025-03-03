@@ -4,6 +4,7 @@ import { ExpenseForm } from './components/ExpenseForm/ExpenseForm';
 import { BalanceList } from './components/BalanceList/BalanceList';
 import { ReportModal } from './components/ReportModal/ReportModal';
 import Analytics from "./components/Analytics/Analytics";
+import AllTimeAnalytics from './components/Analytics/AllTimeAnalytics';
 import { PastReportsModal } from './components/PastReports/PastReports';
 import { db } from './services/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -24,6 +25,7 @@ function App() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [showReport, setShowReport] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showAllTimeAnalytics, setShowAllTimeAnalytics] = useState(false);
   const [showPastReports, setShowPastReports] = useState(false);
   const [pastReports, setPastReports] = useState<MonthlyReport[]>([]);
   const [showSmallCash, setShowSmallCash] = useState(false);
@@ -213,6 +215,7 @@ function App() {
   const handleEscape = () => {
     setShowReport(false);
     setShowAnalytics(false);
+    setShowAllTimeAnalytics(false);
     setShowPastReports(false);
     setShowSmallCash(false);
     setShowGeneral(false); 
@@ -314,11 +317,27 @@ function App() {
               updateExpenseData={updateDataInFirestore}
             />
           )}
+          
           {showAnalytics && (
             <Analytics
               expenses={currentMonthExpenses}
               balances={currentMonthBalances}
               onClose={() => setShowAnalytics(false)}
+              onShowAllTimeAnalytics={() => {
+                setShowAllTimeAnalytics(true);
+                setShowAnalytics(false);
+              }}
+            />
+          )}
+          
+          {showAllTimeAnalytics && (
+            <AllTimeAnalytics
+              expenses={expenses}
+              balances={balances}
+              onClose={() => {
+                setShowAllTimeAnalytics(false);
+                setShowAnalytics(true); // Return to regular analytics when closing
+              }}
             />
           )}
         </>
