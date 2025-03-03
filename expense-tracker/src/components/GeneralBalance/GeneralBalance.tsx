@@ -59,12 +59,16 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
   const [customIncomes, setCustomIncomes] = useState<MonthlyData['customIncomes']>([]);
   const [selectedMonth, setSelectedMonth] = useState<string>('');
   const [availableMonths, setAvailableMonths] = useState<string[]>([]);
+  // Store all Firebase expenses
+  const [firestoreExpenses, setFirestoreExpenses] = useState<Expense[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const [newExpense, setNewExpense] = useState({
     amount: '',
     description: '',
     date: new Date().toISOString().split('T')[0]
   });
+
   const [newIncome, setNewIncome] = useState({
     amount: '',
     description: '',
@@ -98,14 +102,59 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
         setCustomIncomes(data.customIncomes || []);
       }
     };
-
     fetchCustomData();
   }, []);
+
+  // Fetch expense data from Firestore - using the same approach as PastReportsModal
+  useEffect(() => {
+    const fetchAllExpenses = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Get expenses data from Firestore - using the exact same path as PastReportsModal
+        const docRef = doc(db, 'balances', 'expenseData');
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const expenses: Expense[] = data.expenses || [];
+          
+          // Process expenses
+          setFirestoreExpenses(expenses.map(expense => ({
+            ...expense,
+            amount: typeof expense.amount === 'string' ? parseFloat(expense.amount) : expense.amount
+          })));
+        } else {
+          console.log("No expense data found!");
+        }
+        
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error fetching expenses data:", error);
+        setIsLoading(false);
+      }
+    };
+    
+    fetchAllExpenses();
+  }, []);
+
+  // Helper function to convert date to month/year format
+  const getMonthKey = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return '';
+      }
+      return `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+    } catch (e) {
+      return '';
+    }
+  };
 
   // Calculate monthly data including fixed expenses and incomes
   const monthlyData = useMemo(() => {
     const data: Record<string, MonthlyData> = {};
-    
+  
     // Initialize data for all available months
     availableMonths.forEach(monthKey => {
       data[monthKey] = {
@@ -114,64 +163,82 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
         customIncomes: [],
         fixedExpenses: Object.entries(generalBalance['fixed-expenses']).map(([description, amount]) => ({
           description,
-          amount: Number(amount)
+          amount: Number(amount),
         })),
         fixedIncomes: Object.entries(generalBalance['fixed-incomes']).map(([description, amount]) => ({
           description,
-          amount: Number(amount)
-        }))
+          amount: Number(amount),
+        })),
       };
     });
-    
-    // Process date string to get month/year format
-    const processDate = (date: string) => {
-      const dateObj = new Date(date);
-      return `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
-    };
-
-    // Process regular expenses from the expenses prop
+  
+    // Process regular expenses from the expenses prop (current month expenses)
     expenses.forEach(expense => {
-      const monthKey = processDate(expense.date);
-      if (data[monthKey]) {
-        const customExpense: CustomExpense = {
+      const monthKey = getMonthKey(expense.date);
+      if (monthKey && data[monthKey]) {
+        data[monthKey].expenses.push({
           ...expense,
           id: `regular-${expense.date}-${expense.amount}`,
           description: expense.category,
-          displayAmount: `₪${expense.amount.toFixed(2)}`
-        };
-        data[monthKey].expenses.push(customExpense);
+          displayAmount: `₪${expense.amount.toFixed(2)}`,
+        });
       }
     });
-
+  
     // Process custom expenses
     customExpenses.forEach(expense => {
-      const monthKey = processDate(expense.date);
-      if (data[monthKey]) {
+      const monthKey = getMonthKey(expense.date);
+      if (monthKey && data[monthKey]) {
         data[monthKey].expenses.push(expense);
       }
     });
-
+  
     // Process custom incomes
     customIncomes.forEach(income => {
-      const monthKey = processDate(income.date);
-      if (data[monthKey]) {
+      const monthKey = getMonthKey(income.date);
+      if (monthKey && data[monthKey]) {
         data[monthKey].customIncomes.push(income);
       }
     });
-
+  
+    // Process Firestore expenses - similar to how PastReportsModal does it
+    firestoreExpenses.forEach(expense => {
+      const monthKey = getMonthKey(expense.date);
+      
+      // Skip if month key is invalid or not in available months
+      if (!monthKey || !data[monthKey]) {
+        return;
+      }
+      
+      // Skip if already in current month expenses (to avoid duplicates)
+      const isDuplicate = expenses.some(
+        currentExpense => 
+          currentExpense.date === expense.date && 
+          currentExpense.amount === expense.amount && 
+          currentExpense.category === expense.category
+      );
+      
+      if (!isDuplicate) {
+        data[monthKey].expenses.push({
+          ...expense,
+          id: `firebase-${expense.date}-${expense.amount}`,
+          description: expense.category,
+          displayAmount: `₪${expense.amount.toFixed(2)}`,
+        });
+      }
+    });
+    
     return data;
-  }, [expenses, customExpenses, customIncomes, availableMonths]);
-
+  }, [availableMonths, expenses, customExpenses, customIncomes, firestoreExpenses, generalBalance]);
+  
   // Get chart data for selected month
   const chartData = useMemo(() => {
     const selectedData = monthlyData[selectedMonth];
     if (!selectedData) return [];
-
     const totalExpenses = selectedData.expenses.reduce((sum, exp) => sum + exp.amount, 0) +
                          selectedData.fixedExpenses.reduce((sum, exp) => sum + exp.amount, 0);
     const totalIncomes = selectedData.customIncomes.reduce((sum, inc) => sum + inc.amount, 0) +
                         selectedData.fixedIncomes.reduce((sum, inc) => sum + inc.amount, 0);
-
     return [
       { name: 'הוצאות', amount: totalExpenses, fill: '#F87171' },
       { name: 'הכנסות', amount: totalIncomes, fill: '#4ADE80' },
@@ -185,7 +252,6 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
       alert('נא למלא סכום ותיאור');
       return;
     }
-
     const expense: CustomExpense = {
       id: Date.now().toString(),
       amount: parseFloat(newExpense.amount),
@@ -194,7 +260,6 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
       description: newExpense.description,
       displayAmount: `₪${parseFloat(newExpense.amount).toFixed(2)}`
     };
-
     const newExpenses = [...customExpenses, expense];
     setCustomExpenses(newExpenses);
     await updateFirestore(newExpenses, customIncomes);
@@ -211,14 +276,12 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
       alert('נא למלא סכום ותיאור');
       return;
     }
-
     const income = {
       id: Date.now().toString(),
       amount: parseFloat(newIncome.amount),
       date: newIncome.date,
       description: newIncome.description
     };
-
     const newIncomes = [...customIncomes, income];
     setCustomIncomes(newIncomes);
     await updateFirestore(customExpenses, newIncomes);
@@ -250,7 +313,7 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
       <div className="general-content">
         <button onClick={onClose} className="close-btn">×</button>
         <h2 className="general-title">ניהול תקציב חודשי</h2>
-
+        
         <div className="month-selector">
           <select
             value={selectedMonth}
@@ -263,161 +326,175 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
           </select>
         </div>
 
-        <div className="chart-section">
-          <h3 className="section-title">מאזן חודשי</h3>
-          <ResponsiveContainer width="100%" height={400}>
-            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 30, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis domain={[0, 'auto']} tick={{ dx: -10 }} />
-              <Tooltip 
-                formatter={(value) => `₪${Math.abs(Number(value)).toFixed(2)}`}
-                contentStyle={{ direction: 'rtl' }}
-              />
-              <Legend />
-              <Bar dataKey="amount" fill="#4a90e2" barSize={15} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="data-grid">
-          <div className="fixed-section">
-            <h3 className="section-title">הוצאות והכנסות קבועות</h3>
-            <div className="fixed-expenses">
-              <h4>הוצאות קבועות</h4>
-              {monthlyData[selectedMonth]?.fixedExpenses.map((expense, index) => (
-                <div key={index} className="fixed-item expense">
-                  <span className="description">{expense.description}</span>
-                  <span className="amount">₪{expense.amount.toFixed(2)}</span>
-                </div>
-              ))}
-            </div>
-            <div className="fixed-incomes">
-              <h4>הכנסות קבועות</h4>
-              {monthlyData[selectedMonth]?.fixedIncomes.map((income, index) => (
-                <div key={index} className="fixed-item income">
-                  <span className="description">{income.description}</span>
-                  <span className="amount">₪{income.amount.toFixed(2)}</span>
-                </div>
-              ))}
-            </div>
+        {isLoading ? (
+          <div className="loading-container">
+            <p>טוען נתונים...</p>
           </div>
-
-          <div className="input-sections">
-            <div className="expense-section">
-              <h3 className="section-title">הוספת הוצאה</h3>
-              <div className="input-group">
-                <input
-                  type="number"
-                  placeholder="סכום *"
-                  value={newExpense.amount}
-                  onChange={(e) => setNewExpense(prev => ({ ...prev, amount: e.target.value }))}
-                  className="amount-input"
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="תיאור *"
-                  value={newExpense.description}
-                  onChange={(e) => setNewExpense(prev => ({ ...prev, description: e.target.value }))}
-                  className="description-input"
-                  required
-                />
-                <input
-                  type="date"
-                  value={newExpense.date}
-                  onChange={(e) => setNewExpense(prev => ({ ...prev, date: e.target.value }))}
-                  className="date-input"
-                />
-                <button onClick={handleAddExpense} className="add-btn expense">הוסף הוצאה</button>
-              </div>
+        ) : (
+          <>
+            <div className="chart-section">
+              <h3 className="section-title">מאזן חודשי</h3>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 30, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis domain={[0, 'auto']} tick={{ dx: -10 }} />
+                  <Tooltip 
+                    formatter={(value) => `₪${Math.abs(Number(value)).toFixed(2)}`}
+                    contentStyle={{ direction: 'rtl' }}
+                  />
+                  <Legend />
+                  <Bar dataKey="amount" fill="#4a90e2" barSize={15} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
 
-            <div className="income-section">
-              <h3 className="section-title">הוספת הכנסה</h3>
-              <div className="input-group">
-                <input
-                  type="number"
-                  placeholder="סכום *"
-                  value={newIncome.amount}
-                  onChange={(e) => setNewIncome(prev => ({ ...prev, amount: e.target.value }))}
-                  className="amount-input"
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="תיאור *"
-                  value={newIncome.description}
-                  onChange={(e) => setNewIncome(prev => ({ ...prev, description: e.target.value }))}
-                  className="description-input"
-                  required
-                />
-                <input
-                  type="date"
-                  value={newIncome.date}
-                  onChange={(e) => setNewIncome(prev => ({ ...prev, date: e.target.value }))}
-                  className="date-input"
-                />
-                <button onClick={handleAddIncome} className="add-btn income">הוסף הכנסה</button>
-              </div>
-            </div>
-          </div>
-
-          <div className="transactions-section">
-            <h3 className="section-title">תנועות חודשיות</h3>
-            <div className="transactions-grid">
-              <div className="custom-expenses">
-                <h4>הוצאות</h4>
-                {monthlyData[selectedMonth]?.expenses
-                  .map((expense) => (
-                    <div key={expense.id} className="transaction-item expense">
-                      <span className="date">
-                        {new Date(expense.date).toLocaleDateString('he-IL')}
-                      </span>
+            <div className="data-grid">
+              <div className="fixed-section">
+                <h3 className="section-title">הוצאות והכנסות קבועות</h3>
+                <div className="fixed-expenses">
+                  <h4>הוצאות קבועות</h4>
+                  {monthlyData[selectedMonth]?.fixedExpenses.map((expense, index) => (
+                    <div key={index} className="fixed-item expense">
                       <span className="description">{expense.description}</span>
                       <span className="amount">₪{expense.amount.toFixed(2)}</span>
-                      {customExpenses.some(e => e.id === expense.id) && (
-                        <button 
-                          onClick={() => {
-                            const newExpenses = customExpenses.filter(e => e.id !== expense.id);
-                            setCustomExpenses(newExpenses);
-                            updateFirestore(newExpenses, customIncomes);
-                          }}
-                          className="delete-btn"
-                        >
-                          ×
-                        </button>
-                      )}
                     </div>
                   ))}
-              </div>
-
-              <div className="custom-incomes">
-                <h4>הכנסות</h4>
-                {monthlyData[selectedMonth]?.customIncomes
-                  .map((income) => (
-                    <div key={income.id} className="transaction-item income">
-                      <span className="date">
-                        {new Date(income.date).toLocaleDateString('he-IL')}
-                      </span>
+                </div>
+                <div className="fixed-incomes">
+                  <h4>הכנסות קבועות</h4>
+                  {monthlyData[selectedMonth]?.fixedIncomes.map((income, index) => (
+                    <div key={index} className="fixed-item income">
                       <span className="description">{income.description}</span>
                       <span className="amount">₪{income.amount.toFixed(2)}</span>
-                      <button 
-                        onClick={() => {
-                          const newIncomes = customIncomes.filter(i => i.id !== income.id);
-                          setCustomIncomes(newIncomes);
-                          updateFirestore(customExpenses, newIncomes);
-                        }}
-                        className="delete-btn"
-                      >
-                        ×
-                      </button>
                     </div>
                   ))}
+                </div>
+              </div>
+
+              <div className="input-sections">
+                <div className="expense-section">
+                  <h3 className="section-title">הוספת הוצאה</h3>
+                  <div className="input-group">
+                    <input
+                      type="number"
+                      placeholder="סכום *"
+                      value={newExpense.amount}
+                      onChange={(e) => setNewExpense(prev => ({ ...prev, amount: e.target.value }))}
+                      className="amount-input"
+                      required
+                    />
+                    <input
+                      type="text"
+                      placeholder="תיאור *"
+                      value={newExpense.description}
+                      onChange={(e) => setNewExpense(prev => ({ ...prev, description: e.target.value }))}
+                      className="description-input"
+                      required
+                    />
+                    <input
+                      type="date"
+                      value={newExpense.date}
+                      onChange={(e) => setNewExpense(prev => ({ ...prev, date: e.target.value }))}
+                      className="date-input"
+                    />
+                    <button onClick={handleAddExpense} className="add-btn expense">הוסף הוצאה</button>
+                  </div>
+                </div>
+
+                <div className="income-section">
+                  <h3 className="section-title">הוספת הכנסה</h3>
+                  <div className="input-group">
+                    <input
+                      type="number"
+                      placeholder="סכום *"
+                      value={newIncome.amount}
+                      onChange={(e) => setNewIncome(prev => ({ ...prev, amount: e.target.value }))}
+                      className="amount-input"
+                      required
+                    />
+                    <input
+                      type="text"
+                      placeholder="תיאור *"
+                      value={newIncome.description}
+                      onChange={(e) => setNewIncome(prev => ({ ...prev, description: e.target.value }))}
+                      className="description-input"
+                      required
+                    />
+                    <input
+                      type="date"
+                      value={newIncome.date}
+                      onChange={(e) => setNewIncome(prev => ({ ...prev, date: e.target.value }))}
+                      className="date-input"
+                    />
+                    <button onClick={handleAddIncome} className="add-btn income">הוסף הכנסה</button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="transactions-section">
+                <h3 className="section-title">תנועות חודשיות</h3>
+                <div className="transactions-grid">
+                  <div className="custom-expenses">
+                    <h4>הוצאות</h4>
+                    {monthlyData[selectedMonth]?.expenses.length === 0 ? (
+                      <p className="no-transactions">אין הוצאות לחודש זה</p>
+                    ) : (
+                      monthlyData[selectedMonth]?.expenses.map((expense) => (
+                        <div key={expense.id} className="transaction-item expense">
+                          <span className="date">
+                            {new Date(expense.date).toLocaleDateString('he-IL')}
+                          </span>
+                          <span className="description">{expense.description}</span>
+                          <span className="amount">₪{expense.amount.toFixed(2)}</span>
+                          {customExpenses.some(e => e.id === expense.id) && (
+                            <button 
+                              onClick={() => {
+                                const newExpenses = customExpenses.filter(e => e.id !== expense.id);
+                                setCustomExpenses(newExpenses);
+                                updateFirestore(newExpenses, customIncomes);
+                              }}
+                              className="delete-btn"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="custom-incomes">
+                    <h4>הכנסות</h4>
+                    {monthlyData[selectedMonth]?.customIncomes.length === 0 ? (
+                      <p className="no-transactions">אין הכנסות לחודש זה</p>
+                    ) : (
+                      monthlyData[selectedMonth]?.customIncomes.map((income) => (
+                        <div key={income.id} className="transaction-item income">
+                          <span className="date">
+                            {new Date(income.date).toLocaleDateString('he-IL')}
+                          </span>
+                          <span className="description">{income.description}</span>
+                          <span className="amount">₪{income.amount.toFixed(2)}</span>
+                          <button 
+                            onClick={() => {
+                              const newIncomes = customIncomes.filter(i => i.id !== income.id);
+                              setCustomIncomes(newIncomes);
+                              updateFirestore(customExpenses, newIncomes);
+                            }}
+                            className="delete-btn"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
