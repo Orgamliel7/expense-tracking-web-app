@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef} from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { CategoryBalance, Expense, COLORS, INITIAL_BALANCE } from '../../types';
 import { db } from '../../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { useBackButtonClose } from "../../hooks/useBackButtonClose";
 import './styles.css';
 
 interface AnalyticsProps {
@@ -28,6 +29,10 @@ const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose, onSh
   const [allExpenses, setAllExpenses] = useState<Expense[]>(expenses);
   const [selectedMonth, setSelectedMonth] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
+  const analyticsRef = useRef<HTMLDivElement>(null);
+  useBackButtonClose({ onClose });
+  
+
 
   // Fetch all expenses from Firestore including February
   useEffect(() => {
@@ -192,6 +197,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose, onSh
       }
     }
   };
+  
 
   const formatMonth = (monthKey: string): string => {
     const [month, year] = monthKey.split('/');
@@ -202,7 +208,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose, onSh
   if (isLoading) {
     return (
       <div className="analytics-modal">
-        <div className="analytics-content">
+    <div className="analytics-content" ref={analyticsRef}>
           <h2>אנליזות</h2>
           <div className="loading">טוען נתונים...</div>
           <button onClick={onClose} className="close-button">
