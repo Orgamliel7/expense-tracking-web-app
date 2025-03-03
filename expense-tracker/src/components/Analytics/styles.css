@@ -264,3 +264,47 @@
     grid-template-columns: 1fr;
   }
 }
+
+.view-options {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.view-options {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.all-time-button {
+  background-color: #C06C84; /* Soft mauve background */
+  color: white; /* White text */
+  border: none; /* Remove border */
+  border-radius: 50px; /* More rounded corners */
+  padding: 12px 30px; /* Vertical and horizontal padding */
+  font-size: 16px; /* Font size */
+  font-weight: 600;
+  text-transform: uppercase; /* Uppercase text */
+  letter-spacing: 1px; /* Spacing between letters */
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.3s, box-shadow 0.3s ease-in-out; /* Smooth transitions */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Soft shadow */
+}
+
+.all-time-button:hover {
+  background-color: #781f38; /* Slightly darker mauve on hover */
+  transform: translateY(-3px); /* Slight lift on hover */
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15); /* Stronger shadow on hover */
+}
+
+.all-time-button:focus {
+  outline: none; /* Remove default outline */
+  box-shadow: 0 0 10px rgba(202, 170, 179, 0.859); /* Glowing focus effect */
+}
+
+.all-time-button:active {
+  transform: translateY(0); /* Return to original position on click */
+}

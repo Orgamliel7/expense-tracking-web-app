@@ -9,37 +9,6 @@
     background-color: #2E1A47;
   }
 
-  /* .excel-import-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-  } */
-  
-  /* .excel-import-container input[type="file"] {
-    display: none;
-  }
-  
-  .excel-import-label {
-    background-color: #4CAF50;
-    color: white;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: background-color 0.3s;
-  }
-  
-  .excel-import-label:hover {
-    background-color: #45a049;
-  }
-  
-  Ensure RTL support
-  .app {
-    direction: rtl;
-  } */
-
-
-  
   .app-title {
     text-align: center;
     font-size: 2.8em;
