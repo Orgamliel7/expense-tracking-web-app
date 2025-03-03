@@ -3,6 +3,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 import { CategoryBalance, Expense, COLORS, INITIAL_BALANCE } from '../../types';
 import { db } from '../../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { useBackButtonClose } from "../../hooks/useBackButtonClose";  
 import './styles.css';
 
 interface AllTimeAnalyticsProps {
@@ -24,6 +25,8 @@ const AllTimeAnalytics: React.FC<AllTimeAnalyticsProps> = ({ expenses, balances,
   const [allExpenses, setAllExpenses] = useState<Expense[]>(expenses);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'categories'>('overview');
+  useBackButtonClose({ onClose });
+
 
   // Fetch all expenses from Firestore
   useEffect(() => {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MonthlyReport, COLORS, CategoryBalance, Expense } from '../../types';
 import { db } from '../../services/firebase'; 
 import { doc, getDoc } from 'firebase/firestore';
+import { useBackButtonClose } from "../../hooks/useBackButtonClose";   
 import './styles.css';
 
 interface PastReportsModalProps {
@@ -28,6 +29,7 @@ export const PastReportsModal: React.FC<PastReportsModalProps> = ({
   const [monthlyBalances, setMonthlyBalances] = useState<Record<string, CategoryBalance>>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [message, setMessage] = useState<string>('');
+  useBackButtonClose({ onClose });
 
   const formatAmount = (amount: number) => {
     const absValue = Math.abs(amount).toLocaleString();

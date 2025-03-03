@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CategoryBalance, Expense, INITIAL_BALANCE} from '../../types';
+import { useBackButtonClose } from "../../hooks/useBackButtonClose";   
 import './styles.css';
 
 interface ReportModalProps {
@@ -20,6 +21,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   updateExpenseData,
 }) => {
   const [currentMonthExpenses, setCurrentMonthExpenses] = useState<Expense[]>([]);
+  useBackButtonClose({ onClose });
 
   useEffect(() => {
     // Filter expenses to only include those from the current month

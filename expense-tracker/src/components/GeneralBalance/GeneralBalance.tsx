@@ -4,6 +4,8 @@ import { Expense, CategoryBalance } from '../../types';
 import { db } from '../../services/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import generalBalance from '../../values';
+import { useBackButtonClose } from "../../hooks/useBackButtonClose";   
+
 import './styles.css';
 
 interface GeneralProps {
@@ -62,6 +64,7 @@ const General: React.FC<GeneralProps> = ({ expenses, balances, actionBtnClicked,
   // Store all Firebase expenses
   const [firestoreExpenses, setFirestoreExpenses] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  useBackButtonClose({ onClose });
 
   const [newExpense, setNewExpense] = useState({
     amount: '',
