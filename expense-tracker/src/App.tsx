@@ -243,17 +243,7 @@ function App() {
             selectedCategory={selectedCategory}
             onCategorySelect={setSelectedCategory}
           />
-
-          <div className="excel-import-container">
-            <ExpenseUploader
-              expenses={expenses}
-              balances={balances}
-              setBalances={setBalances}
-              setExpenses={setExpenses}
-              updateExpenseData={updateDataInFirestore}
-            />
-          </div>
-
+          
           <ExpenseForm
             selectedCategory={selectedCategory}
             onSubmit={handleExpenseSubmit}
@@ -342,7 +332,13 @@ function App() {
           )}
         </>
       )}
-      <AdminPanel />
+          <AdminPanel
+            expenses={expenses}
+            balances={balances}
+            setBalances={setBalances}
+            setExpenses={setExpenses}
+            updateExpenseData={updateDataInFirestore}
+          />
     </div>
   );
 }

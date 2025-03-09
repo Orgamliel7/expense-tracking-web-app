@@ -154,3 +154,73 @@
     background-color: #9f7aea;
     color: white;
   }
+
+.excel-operations {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.excel-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+.excel-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border: none;
+  font-size: 1rem;
+  min-width: 220px;
+  direction: rtl;
+}
+
+.excel-button.upload {
+  background-color: #4caf50;
+  color: white;
+}
+
+.excel-button.upload:hover {
+  background-color: #388e3c;
+}
+
+.excel-button.download {
+  background-color: #2196f3;
+  color: white;
+}
+
+.excel-button.download:hover {
+  background-color: #1976d2;
+}
+
+.admin-operations {
+  margin-top: 1rem;
+}
+
+.message {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.message.success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+
+.message.error {
+  background-color: #ffebee;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+}
