@@ -15,6 +15,7 @@ interface VoiceData {
   amount: number;
   note: string;
   category?: keyof CategoryBalance;
+  autoConfirmed?: boolean;  // Add this field to handle auto-confirmation
 }
 
 export const ExpenseForm: React.FC<ExpenseFormProps> = ({ 
@@ -26,6 +27,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
   const [note, setNote] = useState<string>('');
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
   const [voiceData, setVoiceData] = useState<VoiceData | null>(null);
+  const [pendingAutoConfirm, setPendingAutoConfirm] = useState<VoiceData | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,22 +38,69 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
     }
   };
 
+  // Effect to handle auto-confirm after category is set
+  React.useEffect(() => {
+    // If we have a pending auto-confirm and a selected category
+    if (pendingAutoConfirm && selectedCategory) {
+      console.log("Processing delayed auto-confirm with category:", selectedCategory);
+      
+      // Submit the expense
+      onSubmit(pendingAutoConfirm.amount, pendingAutoConfirm.note);
+      
+      // Reset states
+      setAmount('');
+      setNote('');
+      setPendingAutoConfirm(null);
+    }
+  }, [pendingAutoConfirm, selectedCategory, onSubmit]);
+
   const handleVoiceRecognition = (data: { 
     amount: number; 
     note: string; 
-    category?: keyof CategoryBalance 
+    category?: keyof CategoryBalance;
+    autoConfirmed?: boolean;
   }) => {
-    setVoiceData(data);
+    console.log("Voice recognition data received:", data);
     
-    // If we have both amount and category, show confirmation
-    if (data.amount > 0 && data.category) {
-      // Set the category in the parent component
+    // Category-only selection (first step)
+    if (data.category && data.amount === 0 && !data.autoConfirmed) {
+      console.log("Setting up category only:", data.category);
       onCategorySelect(data.category);
-      setShowConfirmation(true);
-    } else if (data.amount > 0) {
-      // Just set the form data but no confirmation (no category detected)
+      return;
+    }
+    
+    // For auto-confirmed transactions with amount and category
+    if (data.amount > 0 && data.autoConfirmed && data.category) {
+      console.log("Processing auto-confirmed transaction with category:", data.category);
+      
+      // First set the category
+      onCategorySelect(data.category);
+      
+      // Then queue the expense to be submitted once category is set
+      setPendingAutoConfirm(data);
+    }
+    // For manually confirmed transactions or setting form values
+    else if (data.amount > 0) {
+      // Set the category if provided
+      if (data.category) {
+        console.log("Setting category for manual confirmation:", data.category);
+        onCategorySelect(data.category);
+      }
+      
+      // Update form values
       setAmount(data.amount.toString());
       setNote(data.note);
+      
+      // Store voice data for confirmation dialog
+      setVoiceData(data);
+      
+      // Show confirmation if category is available
+      if (data.category) {
+        // Short delay to ensure category is set
+        setTimeout(() => {
+          setShowConfirmation(true);
+        }, 150);
+      }
     }
   };
 
@@ -59,7 +108,8 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
     if (voiceData && selectedCategory) {
       // Submit the expense
       onSubmit(voiceData.amount, voiceData.note);
-      // Reset form
+      
+      // Reset form and state
       setAmount('');
       setNote('');
       setVoiceData(null);

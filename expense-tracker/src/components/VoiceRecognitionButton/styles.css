@@ -1,4 +1,74 @@
-/* Voice recognition button styles */
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Confirmation Modal */
+.confirmation-modal {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: right;
+  direction: rtl;
+}
+
+.confirmation-message {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.note-preview {
+  background: #f5f5f5;
+  padding: 8px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}
+
+.confirmation-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.confirm-button,
+.cancel-button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  min-width: 80px;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.confirm-button {
+  background: #4caf50;
+  color: #fff;
+}
+
+.confirm-button:hover {
+  background: #43a047;
+}
+
+.cancel-button {
+  background: #f5f5f5;
+  color: #333;
+}
+
+.cancel-button:hover {
+  background: #e0e0e0;
+}
+
+/* Voice Recognition Button */
 .voice-recognition-button {
   display: flex;
   align-items: center;
@@ -6,7 +76,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: #f0f0f0;
+  background: #f0f0f0;
   border: none;
   cursor: pointer;
   position: relative;
@@ -14,15 +84,17 @@
   transition: all 0.3s ease;
 }
 
+.voice-recognition-button.listening,
+.voice-recognition-button.long-press {
+  background: #ff4444;
+  color: #fff;
+}
+
 .voice-recognition-button.listening {
-  background-color: #ff4444;
-  color: white;
   animation: pulse 1s infinite;
 }
 
 .voice-recognition-button.long-press {
-  background-color: #ff4444;
-  color: white;
   width: 45px;
   height: 45px;
 }
@@ -37,7 +109,21 @@
 }
 
 .voice-recognition-button.listening svg {
-  color: white;
+  color: #fff;
+}
+
+/* Recording Indicator */
+.recording-indicator {
+  position: absolute;
+  bottom: -30px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #ff4444;
+}
+
+.recording-text {
+  font-size: 20px;
+  font-weight: bold;
 }
 
 .voice-recognition-button .timer {
@@ -66,7 +152,7 @@
   position: absolute;
   top: 100%;
   margin-top: 5px;
-  background-color: #f8d7da;
+  background: #f8d7da;
   color: #721c24;
   padding: 5px 10px;
   border-radius: 4px;
@@ -84,9 +170,10 @@
   direction: rtl;
 }
 
-.recognition-result {
-  background-color: #f8f8f8;
-  border: 1px solid #ddd;
+/* Confirmation Screen */
+.confirmation-screen {
+  background: #fff;
+  border: 1px solid #e0e0e0;
   border-radius: 8px;
   padding: 15px;
   margin-bottom: 20px;
@@ -94,34 +181,25 @@
   max-width: 300px;
   text-align: right;
   direction: rtl;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.recognition-result div {
-  margin-bottom: 8px;
-}
-
-.confirmation-buttons {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 15px;
-}
-
-.confirm-button, .cancel-button {
-  padding: 8px 15px;
-  border-radius: 4px;
-  border: none;
-  cursor: pointer;
+.confirmation-header {
+  font-size: 18px;
   font-weight: bold;
+  margin-bottom: 10px;
+  text-align: center;
 }
 
-.confirm-button {
-  background-color: #4caf50;
-  color: white;
+.confirmation-question {
+  margin-bottom: 10px;
+  font-size: 15px;
 }
 
-.cancel-button {
-  background-color: #f44336;
-  color: white;
+.confirmation-note {
+  color: #666;
+  margin-bottom: 15px;
+  font-size: 14px;
 }
 
 .auto-confirm-countdown {
@@ -131,6 +209,7 @@
   margin-top: 10px;
 }
 
+/* Pulse Animation */
 @keyframes pulse {
   0% {
     transform: scale(1);
@@ -141,4 +220,13 @@
   100% {
     transform: scale(1);
   }
+}
+
+.long-press-indicator {
+  position: absolute;
+  bottom: -30px;
+  font-size: 32px; /* Bigger text */
+  font-weight: bold;
+  color: #ff4b4b;
+  text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.3);
 }

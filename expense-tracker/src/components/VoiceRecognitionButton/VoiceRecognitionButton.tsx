@@ -39,7 +39,12 @@ interface SpeechRecognitionErrorEvent {
 }
 
 interface VoiceRecognitionButtonProps {
-  onRecognitionComplete: (data: { amount: number; note: string; category?: keyof CategoryBalance }) => void;
+  onRecognitionComplete: (data: { 
+    amount: number; 
+    note: string; 
+    category?: keyof CategoryBalance;
+    autoConfirmed?: boolean; // Flag to indicate auto-confirmation
+  }) => void;
 }
 
 export const VoiceRecognitionButton: React.FC<VoiceRecognitionButtonProps> = ({ 
@@ -51,6 +56,8 @@ export const VoiceRecognitionButton: React.FC<VoiceRecognitionButtonProps> = ({
   const [longPressActive, setLongPressActive] = useState(false);
   const [recognizedData, setRecognizedData] = useState<{ amount: number; note: string; category?: keyof CategoryBalance } | null>(null);
   const [autoConfirmCountdown, setAutoConfirmCountdown] = useState(0);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [categorySet, setCategorySet] = useState(false); // New state to track category set status
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const timerRef = useRef<number | null>(null);
@@ -69,50 +76,151 @@ export const VoiceRecognitionButton: React.FC<VoiceRecognitionButtonProps> = ({
     };
   }, []);
 
-  // Handle auto-confirm countdown
+  // Handle recognized data - ensure category is set first, then show confirmation
   useEffect(() => {
     if (recognizedData && recognizedData.amount > 0 && recognizedData.category) {
-      setAutoConfirmCountdown(3);
+      console.log("Recognition data received, processing:", recognizedData);
       
-      if (autoConfirmTimerRef.current) {
-        clearInterval(autoConfirmTimerRef.current);
-      }
+      // First set the category and mark categorySet as false until complete
+      setCategorySet(false);
       
-      autoConfirmTimerRef.current = window.setInterval(() => {
-        setAutoConfirmCountdown(prev => {
-          if (prev <= 1) {
-            confirmTransaction();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+      // Set the category first
+      onRecognitionComplete({
+        amount: 0,
+        note: "",
+        category: recognizedData.category,
+        autoConfirmed: false
+      });
       
-      return () => {
+      // Wait a short time to ensure the category selection is processed
+      setTimeout(() => {
+        // Mark the category as set
+        setCategorySet(true);
+        
+        // Then show confirmation
+        setShowConfirmation(true);
+        
+        // Start auto-confirm countdown
+        setAutoConfirmCountdown(3);
+        
         if (autoConfirmTimerRef.current) {
           clearInterval(autoConfirmTimerRef.current);
         }
-      };
-    }
-  }, [recognizedData]);
-
-  const confirmTransaction = () => {
-    if (recognizedData) {
-      onRecognitionComplete(recognizedData);
+        
+        // Create a new timer that will auto-confirm after 3 seconds
+        autoConfirmTimerRef.current = window.setInterval(() => {
+          setAutoConfirmCountdown(prev => {
+            console.log("Countdown:", prev);
+            if (prev <= 1) {
+              // Auto-confirm the transaction after countdown reaches 0
+              console.log("Auto-confirming transaction");
+              // Clear interval first to prevent multiple calls
+              if (autoConfirmTimerRef.current) {
+                clearInterval(autoConfirmTimerRef.current);
+                autoConfirmTimerRef.current = null;
+              }
+              
+              // Only submit if category is set
+              if (categorySet) {
+                console.log("Category is set, submitting auto-confirmed transaction");
+                // Submit the transaction with auto-confirm flag
+                onRecognitionComplete({
+                  ...recognizedData,
+                  autoConfirmed: true
+                });
+                
+                // Reset states
+                setRecognizedData(null);
+                setShowConfirmation(false);
+              } else {
+                console.log("Category not set yet, delaying auto-confirmation");
+                // Try again in a moment if category isn't set yet
+                setTimeout(() => {
+                  if (recognizedData) {
+                    onRecognitionComplete({
+                      ...recognizedData,
+                      autoConfirmed: true
+                    });
+                    
+                    setRecognizedData(null);
+                    setShowConfirmation(false);
+                  }
+                }, 300);
+              }
+              
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      }, 300); // Wait longer for category selection to complete
+    } else if (recognizedData && recognizedData.amount > 0 && !recognizedData.category) {
+      // No category detected, show error
+      showError('לא זוהתה קטגוריה. אנא ציין את הקטגוריה');
       setRecognizedData(null);
+    }
+    
+    return () => {
+      if (autoConfirmTimerRef.current) {
+        clearInterval(autoConfirmTimerRef.current);
+      }
+    };
+  }, [recognizedData]);
+  
+  // Confirm transaction function - ensure category is set first
+  const confirmTransaction = (isManualConfirm = false) => {
+    console.log("Confirming transaction manually:", isManualConfirm);
+    
+    if (recognizedData) {
+      // Clear any existing auto-confirm timer
       if (autoConfirmTimerRef.current) {
         clearInterval(autoConfirmTimerRef.current);
         autoConfirmTimerRef.current = null;
       }
+
+      // Only submit if category is set or this is a manual confirmation
+      if (categorySet || isManualConfirm) {
+        console.log("Category is set, submitting transaction");
+        // Submit the transaction with auto-confirm flag
+        onRecognitionComplete({
+          ...recognizedData,
+          autoConfirmed: true
+        });
+        
+        // Reset states
+        setRecognizedData(null);
+        setShowConfirmation(false);
+      } else {
+        console.log("Category not set yet, delaying confirmation");
+        // Try again in a moment if category isn't set yet
+        setTimeout(() => {
+          if (recognizedData) {
+            onRecognitionComplete({
+              ...recognizedData,
+              autoConfirmed: true
+            });
+            
+            setRecognizedData(null);
+            setShowConfirmation(false);
+          }
+        }, 300);
+      }
     }
   };
-
+  
+  // Cancel transaction function
   const cancelTransaction = () => {
-    setRecognizedData(null);
+    console.log("Canceling transaction");
+    
+    // Clear any existing auto-confirm timer
     if (autoConfirmTimerRef.current) {
       clearInterval(autoConfirmTimerRef.current);
       autoConfirmTimerRef.current = null;
     }
+    
+    setRecognizedData(null);
+    setShowConfirmation(false);
+    setCategorySet(false);
   };
 
   const startSpeechRecognition = (isLongPress = false) => {
@@ -124,6 +232,7 @@ export const VoiceRecognitionButton: React.FC<VoiceRecognitionButtonProps> = ({
 
     setIsListening(true);
     setErrorMessage(null);
+    setCategorySet(false);
     
     // Clear any existing error timeout
     if (errorTimeoutRef.current) {
@@ -174,6 +283,8 @@ export const VoiceRecognitionButton: React.FC<VoiceRecognitionButtonProps> = ({
       // Check if we detected an amount
       if (processedData.amount <= 0) {
         showError('לא נקלטה שום הוצאה בהקלטה הקולית');
+      } else if (!processedData.category) {
+        showError('לא זוהתה קטגוריה. אנא ציין את הקטגוריה');
       } else {
         setRecognizedData(processedData);
         
@@ -358,16 +469,18 @@ export const VoiceRecognitionButton: React.FC<VoiceRecognitionButtonProps> = ({
 
   return (
     <div className="voice-button-container">
-      {recognizedData && recognizedData.amount > 0 && (
-        <div className="recognition-result">
-          <div>סכום: {recognizedData.amount} ש"ח</div>
-          {recognizedData.category && <div>קטגוריה: {recognizedData.category}</div>}
-          {recognizedData.note && <div>הערה: {recognizedData.note}</div>}
-          <div className="confirmation-buttons">
-            <button onClick={confirmTransaction} className="confirm-button">אישור</button>
-            <button onClick={cancelTransaction} className="cancel-button">ביטול</button>
+      {showConfirmation && recognizedData && (
+        <div className="confirmation-screen">
+          <div className="confirmation-header">אישור הוצאה</div>
+          <div className="confirmation-question">
+            האם להפחית {recognizedData.amount} שקלים מקטגוריה: {recognizedData.category}?
           </div>
-          {recognizedData.category && autoConfirmCountdown > 0 && (
+          <div className="confirmation-note">הערה: {recognizedData.note}</div>
+          <div className="confirmation-buttons">
+            <button onClick={cancelTransaction} className="cancel-button">ביטול</button>
+            <button onClick={() => confirmTransaction(true)} className="confirm-button">אישור</button>
+          </div>
+          {autoConfirmCountdown > 0 && (
             <div className="auto-confirm-countdown">
               אישור אוטומטי בעוד {autoConfirmCountdown} שניות
             </div>
