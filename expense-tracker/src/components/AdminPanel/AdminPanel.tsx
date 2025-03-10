@@ -216,12 +216,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   return (
     <>
+    <div className="admin-panel-wrapper">
       <button 
         className="admin-button"
         onClick={() => setIsOpen(true)}
       >
         Excel Options
       </button>
+    </div>
 
       {isOpen && (
         <div className="modal-overlay">

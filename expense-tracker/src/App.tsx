@@ -12,7 +12,6 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useLoading } from './hooks/useLoading';
 import { CategoryBalance, Expense, INITIAL_BALANCE, MonthlyReport } from './types';
 import AdminPanel from './components/AdminPanel/AdminPanel';
-import { ExpenseUploader } from './components/ExpenseUploader/ExpenseUploader';
 import { ActionButtons } from './components/ActionButtons/ActionButtons';
 import SmallCash from './components/SmallCash/SmallCash';
 import General from './components/GeneralBalance/GeneralBalance';
@@ -243,7 +242,7 @@ function App() {
             selectedCategory={selectedCategory}
             onCategorySelect={setSelectedCategory}
           />
-          
+
           <ExpenseForm
             selectedCategory={selectedCategory}
             onSubmit={handleExpenseSubmit}
@@ -332,6 +331,7 @@ function App() {
           )}
         </>
       )}
+        <div className="admin-panel-wrapper">
           <AdminPanel
             expenses={expenses}
             balances={balances}
@@ -339,6 +339,7 @@ function App() {
             setExpenses={setExpenses}
             updateExpenseData={updateDataInFirestore}
           />
+        </div>
     </div>
   );
 }

@@ -2,10 +2,10 @@
 .action-buttons-grid {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   margin: 18px 0;
   width: 100%;
-  max-width: 600px;
+  max-width: 500px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -13,18 +13,27 @@
 .action-buttons-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 12px;
+  width: 100%;
+  justify-content: center;
+}
+
+/* Bottom row alignment */
+.action-buttons-bottom {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
   width: 100%;
 }
 
-/* Base button styles with glass-morphism effect */
+/* Base button styles */
 .report-button, 
-.excel-button, 
 .past-reports-button,
 .small-cash-button,
-.general-button {
+.general-button,
+.analytics-button {
   padding: 12px 8px;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   border: none;
   border-radius: 16px;
@@ -45,21 +54,22 @@
   -webkit-backdrop-filter: blur(4px);
 }
 
-/* Button specific styles - color palette harmonious with purple background */
+/* Updated modern purple for Expense Report (דוח הוצאות) */
 .report-button {
-  background: linear-gradient(135deg, #A367DC 0%, #8A4FD1 100%);
+  background: linear-gradient(135deg, #7A5DC7 0%, #5E3EAA 100%);
   border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
+/* Other buttons */
 .analytics-button {
   background: linear-gradient(135deg, #7986CB 0%, #5C6BC0 100%);
   border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
-.excel-button {
-  background: linear-gradient(135deg, #66BB6A 0%, #43A047 100%);
+.general-button {
+  background: linear-gradient(135deg, #E1E1B3 0%, #D4D4A7 100%);
+  color: #3E3E35;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  gap: 5px;
 }
 
 .past-reports-button {
@@ -72,43 +82,33 @@
   border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
-.general-button {
-  background: linear-gradient(135deg, #E1E1B3 0%, #D4D4A7 100%);
-  color: #3E3E35;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-}
-
-/* Hover effects with subtle animation */
+/* Hover effects */
 .report-button:hover, 
-.excel-button:hover, 
 .past-reports-button:hover,
 .small-cash-button:hover,
-.general-button:hover {
+.general-button:hover,
+.analytics-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 7px 14px rgba(0, 0, 0, 0.2);
 }
 
 /* Active state */
 .report-button:active, 
-.excel-button:active, 
 .past-reports-button:active,
 .small-cash-button:active,
-.general-button:active {
+.general-button:active,
+.analytics-button:active {
   transform: translateY(1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 /* Button-specific hover refinements */
 .report-button:hover {
-  background: linear-gradient(135deg, #B57AE6 0%, #9A5FE0 100%);
+  background: linear-gradient(135deg, #8B6FD8 0%, #6D4EC2 100%);
 }
 
 .analytics-button:hover {
   background: linear-gradient(135deg, #8995D3 0%, #6C7BCF 100%);
-}
-
-.excel-button:hover {
-  background: linear-gradient(135deg, #75C378 0%, #52B356 100%);
 }
 
 .past-reports-button:hover {
@@ -123,21 +123,15 @@
   background: linear-gradient(135deg, #ECECC4 0%, #E0E0B8 100%);
 }
 
-/* Icon styling */
-.excel-button svg {
-  margin-left: 4px;
-  font-size: 16px;
-}
-
 /* Responsive adjustments for very small screens */
 @media (max-width: 320px) {
   .report-button, 
-  .excel-button, 
   .past-reports-button,
   .small-cash-button,
-  .general-button {
-    font-size: 12px;
-    padding: 8px 4px;
+  .general-button,
+  .analytics-button {
+    font-size: 14px;
+    padding: 10px 6px;
     min-height: 48px;
   }
 }
