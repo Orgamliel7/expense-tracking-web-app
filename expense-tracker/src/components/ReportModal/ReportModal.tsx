@@ -164,9 +164,11 @@ export const ReportModal: React.FC<ReportModalProps> = ({
               </li>
             ))}
           </ul>
-          <button onClick={handleClearExpenses} className="clear-report-button">
+          
+          {/*For now, remove the dangerous button that clears all monthly expenses.
+           <button onClick={handleClearExpenses} className="clear-report-button"> 
             נקה דו"ח
-          </button>
+          </button> */}
         </>
       ) : (
         <p>אין הוצאות בחודש הנוכחי</p>
