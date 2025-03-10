@@ -86,20 +86,29 @@
 }
 /* Button to close the modal (סגור דו"ח) */
 .close-button {
-  background-color:  #298091 !important; /* Ensures the red background */
-  color: white;
+  background: none;
   border: none;
-  padding: 12px 20px;
-  border-radius: 5px;
+  color: #444; /* Neutral dark gray for visibility */
+  font-size: 22px; /* Adjust size for clarity */
+  font-weight: bold;
   cursor: pointer;
-  font-size: 16px;
-  margin-top: 20px;
-  display: inline-block;
-  transition: background-color 0.3s ease;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.3s ease, transform 0.2s ease;
 }
 
 .close-button:hover {
-  background-color: #cdc716 !important; /* Ensures the background */
+  color: #c0392b; /* Subtle red on hover */
+  transform: scale(1.2); /* Slight grow effect */
+}
+
+.close-button:active {
+  transform: scale(0.9); /* Click effect */
 }
 
 /* Message when there are no expenses */

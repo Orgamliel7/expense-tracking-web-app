@@ -248,26 +248,3 @@
   }
 
 
-  .admin-panel-wrapper {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 1000;
-    width: auto;
-    max-width: 200px;
-  }
-  
-  .admin-button {
-    /* Remove position: fixed */
-    background-color: #9b1c1c;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-    width: fit-content;
-    /* Remove margin-left: auto as it's not needed here */
-    /* Remove right and bottom as they're handled by the wrapper */
-  }

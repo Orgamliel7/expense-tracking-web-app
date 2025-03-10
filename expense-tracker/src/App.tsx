@@ -10,7 +10,7 @@ import { db } from './services/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useLoading } from './hooks/useLoading';
-import { CategoryBalance, Expense, INITIAL_BALANCE, MonthlyReport } from './types';
+import { CategoryBalance, Expense, INITIAL_BALANCE, MonthlyReport, fetchInitialBalance} from './types';
 import AdminPanel from './components/AdminPanel/AdminPanel';
 import { ActionButtons } from './components/ActionButtons/ActionButtons';
 import SmallCash from './components/SmallCash/SmallCash';
@@ -164,6 +164,7 @@ function App() {
     };
 
     const initializeApp = async () => {
+      await fetchInitialBalance();
       await fetchPastReports();
       const mainDocRef = doc(db, 'balances', 'expenseData');
       const mainDocSnap = await getDoc(mainDocRef);

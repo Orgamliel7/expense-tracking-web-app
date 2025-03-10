@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { FaUpload, FaDownload } from 'react-icons/fa';
+import { FaUpload, FaDownload, FaEdit, FaSearch } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
-import { CategoryBalance, Expense } from '../../types';
+import { CategoryBalance, Expense, INITIAL_BALANCE} from '../../types';
+import { updateInitialBalance as updateInitialBalanceInFirebase } from '../../types';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
+import { db } from '../../services/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 import './styles.css';
 
@@ -12,6 +15,15 @@ interface AdminPanelProps {
   setBalances: React.Dispatch<React.SetStateAction<CategoryBalance>>;
   setExpenses: React.Dispatch<React.SetStateAction<Expense[]>>;
   updateExpenseData: (balances: CategoryBalance, expenses: Expense[]) => Promise<void>;
+  updateInitialBalance?: (newInitialBalance: CategoryBalance) => Promise<boolean>;
+}
+
+interface SearchResult {
+  source: 'expenseData' | 'smallCashData' | 'generalData';
+  category: string;
+  amount: number;
+  date: string;
+  note: string;
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({
@@ -19,17 +31,31 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   balances,
   setBalances,
   setExpenses,
-  updateExpenseData
+  updateExpenseData,
+  updateInitialBalance
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [showBalanceModal, setShowBalanceModal] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  // Use INITIAL_BALANCE as the starting point for the modal
+  const [updatedInitialBalances, setUpdatedInitialBalances] = useState<CategoryBalance>({...INITIAL_BALANCE});
 
   const handleEscape = () => {
     if (isOpen) {
       setIsOpen(false);
       setMessage('');
       setError(null);
+    }
+    if (showBalanceModal) {
+      setShowBalanceModal(false);
+    }
+    if (showSearchModal) {
+      setShowSearchModal(false);
     }
   };
 
@@ -208,6 +234,149 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     XLSX.writeFile(workbook, 'Expense_Report.xlsx');
   };
 
+  const handleShowBalanceModal = () => {
+    // Reset to current INITIAL_BALANCE when opening modal
+    setUpdatedInitialBalances({...INITIAL_BALANCE});
+    setShowBalanceModal(true);
+  };
+
+  const handleBalanceChange = (category: keyof CategoryBalance, value: string) => {
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue) && numValue >= 0) {
+      setUpdatedInitialBalances({
+        ...updatedInitialBalances,
+        [category]: numValue
+      });
+    }
+  };
+  
+  const handleUpdateInitialBalances = async () => {
+    try {
+      // Calculate the difference in values to add to current balances
+      const newBalances = {...balances};
+      
+      // For each category, add the difference between updated and initial values
+      Object.keys(updatedInitialBalances).forEach(key => {
+        const category = key as keyof CategoryBalance;
+        const currentInitial = INITIAL_BALANCE[category];
+        const newInitial = updatedInitialBalances[category];
+        const difference = newInitial - currentInitial;
+        
+        // Only update if there's a change
+        if (difference !== 0) {
+          newBalances[category] += difference;
+        }
+      });
+      
+      // Update the balances first
+      setBalances(newBalances);
+      await updateExpenseData(newBalances, expenses);
+      
+      // Use the imported direct function if prop isn't available
+      let success = false;
+      if (updateInitialBalance) {
+        success = await updateInitialBalance({...updatedInitialBalances});
+      } else {
+        // Import this from index.ts
+        success = await updateInitialBalanceInFirebase({...updatedInitialBalances});
+      }
+      
+      if (success) {
+        setMessage('התקציב ההתחלתי עודכן בהצלחה');
+      } else {
+        setError('שמירת התקציב ההתחלתי נכשלה');
+      }
+      
+      setShowBalanceModal(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'שגיאה בעדכון התקציב ההתחלתי');
+    }
+  };
+
+  const handleShowSearchModal = () => {
+    setSearchTerm('');
+    setSearchResults([]);
+    setShowSearchModal(true);
+  };
+
+  const handleSearchTermChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleSearch = async () => {
+    if (!searchTerm.trim()) {
+      setError("יש להזין מילת חיפוש");
+      return;
+    }
+  
+    try {
+      setIsSearching(true);
+      setError(null);
+      setSearchResults([]);
+  
+      const term = searchTerm.toLowerCase();
+  
+      // Fetch documents from Firestore
+      const expenseDocRef = doc(db, "balances", "expenseData");
+      const smallCashDocRef = doc(db, "balances", "smallCashData");
+      const generalDataDocRef = doc(db, "customData", "generalData");
+  
+      const [expenseSnap, smallCashSnap, generalDataSnap] = await Promise.all([
+        getDoc(expenseDocRef),
+        getDoc(smallCashDocRef),
+        getDoc(generalDataDocRef),
+      ]);
+  
+      const expenseData = expenseSnap.exists() ? expenseSnap.data()?.expenses || [] : [];
+      const smallCashData = smallCashSnap.exists() ? smallCashSnap.data()?.expenses || [] : [];
+      const generalData = generalDataSnap.exists() ? generalDataSnap.data()?.expenses || [] : [];
+  
+      // Explicitly define source type using type assertion
+      const filterBySearchTerm = (
+        data: any[],
+        source: "expenseData" | "smallCashData" | "generalData" // Enforce strict type
+      ): SearchResult[] =>
+        data
+          .filter((expense) => expense.note && expense.note.toLowerCase().includes(term))
+          .map((expense) => ({
+            source, // Now it's strictly typed
+            category: String(expense.category),
+            amount: Number(expense.amount),
+            date: String(expense.date),
+            note: String(expense.note),
+          }));
+  
+      const expenseResults = filterBySearchTerm(expenseData, "expenseData");
+      const smallCashResults = filterBySearchTerm(smallCashData, "smallCashData");
+      const generalResults = filterBySearchTerm(generalData, "generalData");
+  
+      // Combine and sort results by date (newest first)
+      const combinedResults: SearchResult[] = [...expenseResults, ...smallCashResults, ...generalResults].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+  
+      setSearchResults(combinedResults);
+  
+      if (combinedResults.length === 0) {
+        setMessage("לא נמצאו תוצאות עבור החיפוש");
+      }
+    } catch (error) {
+      console.error("Error searching expenses:", error);
+      setError("שגיאה בחיפוש נתונים");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('he-IL');
+    } catch (error) {
+      return dateString;
+    }
+  };
+
   const handleClose = () => {
     setIsOpen(false);
     setMessage('');
@@ -253,6 +422,20 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                   >
                     <FaDownload /> הורד כקובץ אקסל
                   </button>
+
+                  <button 
+                    className="excel-button update-balance"
+                    onClick={handleShowBalanceModal}
+                  >
+                    <FaEdit /> שנה ערך התחלתי
+                  </button>
+                  
+                  <button 
+                    className="excel-button search"
+                    onClick={handleShowSearchModal}
+                  >
+                    <FaSearch /> חיפוש בהוצאות
+                  </button>
                 </div>
               </div>
 
@@ -267,6 +450,135 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                   {error}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBalanceModal && (
+        <div className="modal-overlay">
+          <div className="modal-content balance-modal">
+            <div className="modal-header">
+              <h2>עדכון ערך התחלתי</h2>
+              <button className="close-button" onClick={() => setShowBalanceModal(false)}>&times;</button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="balance-form-info">
+                שינוי ערך התחלתי ישפיע על יתרת התקציב הנוכחית באופן חד פעמי בלבד. 
+                לדוגמה: אם תשנה את הערך מ-200 ל-300, יתווספו 100 ש״ח ליתרת הקטגוריה באופן חד פעמי.
+              </div>
+              
+              <div className="balance-form">
+                {Object.keys(updatedInitialBalances).map((category) => (
+                  <div key={category} className="balance-item">
+                    <label htmlFor={`balance-${category}`}>{category}</label>
+                    <div className="input-row">
+                      <input
+                        id={`balance-${category}`}
+                        type="number"
+                        min="0"
+                        value={updatedInitialBalances[category as keyof CategoryBalance]}
+                        onChange={(e) => handleBalanceChange(category as keyof CategoryBalance, e.target.value)}
+                      />
+                      <span className="currency-symbol">₪</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="balance-actions">
+                <button 
+                  className="balance-submit"
+                  onClick={handleUpdateInitialBalances}
+                >
+                  שמור שינויים
+                </button>
+                <button 
+                  className="balance-cancel"
+                  onClick={() => setShowBalanceModal(false)}
+                >
+                  ביטול
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSearchModal && (
+        <div className="modal-overlay">
+          <div className="modal-content search-modal">
+            <div className="modal-header">
+              <h2>חיפוש בהערות ההוצאות</h2>
+              <button className="close-button" onClick={() => setShowSearchModal(false)}>&times;</button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="search-form">
+                <div className="search-input-container">
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={handleSearchTermChange}
+                    placeholder="הזן מילת חיפוש..."
+                    className="search-input"
+                  />
+                  <button 
+                    className="search-button"
+                    onClick={handleSearch}
+                    disabled={isSearching}
+                  >
+                    {isSearching ? 'מחפש...' : 'חפש'}
+                  </button>
+                </div>
+                
+                {error && (
+                  <div className="message error">
+                    {error}
+                  </div>
+                )}
+                
+                {message && searchResults.length === 0 && (
+                  <div className="message info">
+                    {message}
+                  </div>
+                )}
+                
+                {searchResults.length > 0 && (
+                  <div className="search-results">
+                    <div className="results-count">נמצאו {searchResults.length} תוצאות</div>
+                    <div className="results-table-container">
+                      <table className="results-table">
+                        <thead>
+                          <tr>
+                            <th>תאריך</th>
+                            <th>קטגוריה</th>
+                            <th>סכום</th>
+                            <th>הערה</th>
+                            <th>מקור</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {searchResults.map((result, index) => (
+                            <tr key={index}>
+                              <td>{formatDate(result.date)}</td>
+                              <td>{result.category}</td>
+                              <td className="amount-cell">₪{result.amount.toLocaleString('he-IL')}</td>
+                              <td className="note-cell">{result.note}</td>
+                              <td>
+                                {result.source === 'expenseData' && 'הוצאות כלליות'}
+                                {result.source === 'smallCashData' && 'הוצאות יומיומיות'}
+                                {result.source === 'generalData' && 'מידע כללי'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

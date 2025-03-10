@@ -1,3 +1,6 @@
+import { db } from '../services/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+
 export interface CategoryBalance {
   דלק: number;
   מסעדות: number;
@@ -18,7 +21,9 @@ export interface Expense {
   displayAmount: string; 
 }
 
-export const INITIAL_BALANCE: CategoryBalance = {
+
+// Default values as fallback if Firebase fetch fails
+const DEFAULT_BALANCE: CategoryBalance = {
   דלק: 1200,
   מסעדות: 550,
   חופשות: 400,
@@ -28,6 +33,54 @@ export const INITIAL_BALANCE: CategoryBalance = {
   מעיין: 120,  
   "טיפוח והנעלה": 150, 
   "סופר": 1300, 
+};
+
+// Initial export that will be updated after fetch
+export let INITIAL_BALANCE: CategoryBalance = { ...DEFAULT_BALANCE };
+
+// Function to fetch initial balance from Firebase
+export const fetchInitialBalance = async (): Promise<void> => {
+  try {
+    const docRef = doc(db, 'balances', 'initialBalance');
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists() && docSnap.data()) {
+      const data = docSnap.data();
+      // Validate the data has all required keys
+      const isValidBalance = Object.keys(DEFAULT_BALANCE).every(key => 
+        typeof data[key] === 'number' && !isNaN(data[key])
+      );
+      
+      if (isValidBalance) {
+        INITIAL_BALANCE = data as CategoryBalance;
+        console.log('Initial balance loaded from Firebase');
+      } else {
+        console.warn('Invalid balance data in Firebase, using defaults');
+      }
+    } else {
+      // If document doesn't exist, create it with default values
+      await setDoc(docRef, DEFAULT_BALANCE);
+      console.log('Created default initial balance in Firebase');
+    }
+  } catch (error) {
+    console.error('Error fetching initial balance:', error);
+    // Fallback to default values on error
+  }
+};
+
+// Function to update initial balance in Firebase
+export const updateInitialBalance = async (newBalance: CategoryBalance): Promise<boolean> => {
+  try {
+    const docRef = doc(db, 'balances', 'initialBalance');
+    await setDoc(docRef, newBalance);
+    // Update in-memory value as well
+    INITIAL_BALANCE = { ...newBalance };
+    console.log('Initial balance updated in Firebase');
+    return true;
+  } catch (error) {
+    console.error('Error updating initial balance:', error);
+    return false;
+  }
 };
 
 export const COLORS = {
