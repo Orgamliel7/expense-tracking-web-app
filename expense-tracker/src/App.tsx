@@ -10,7 +10,7 @@ import { db } from './services/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useLoading } from './hooks/useLoading';
-import { CategoryBalance, Expense, INITIAL_BALANCE, MonthlyReport, fetchInitialBalance} from './types';
+import { CategoryBalance, Expense, INITIAL_BALANCE, MonthlyReport, fetchInitialBalance } from './types';
 import AdminPanel from './components/AdminPanel/AdminPanel';
 import { ActionButtons } from './components/ActionButtons/ActionButtons';
 import SmallCash from './components/SmallCash/SmallCash';
@@ -19,6 +19,7 @@ import General from './components/GeneralBalance/GeneralBalance';
 import './styles.css';
 
 function App() {
+  const [isExcelOptionsOpen, setIsExcelOptionsOpen] = useState(false);
   const [balances, setBalances] = useState<CategoryBalance>(INITIAL_BALANCE);
   const [selectedCategory, setSelectedCategory] = useState<keyof CategoryBalance | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -176,7 +177,6 @@ function App() {
 
         await createInitialPastReport();
         await checkMonthlyReset();
-
       }
     };
 
@@ -219,6 +219,7 @@ function App() {
     setShowPastReports(false);
     setShowSmallCash(false);
     setShowGeneral(false); 
+    setIsExcelOptionsOpen(false);
     setSelectedCategory(null);
   };
 
@@ -257,13 +258,6 @@ function App() {
             updateExpenseData={updateDataInFirestore}
           />
 
-          <General 
-            expenses={currentMonthExpenses}
-            balances={currentMonthBalances}
-            actionBtnClicked={showGeneral}
-            onClose={() => setShowGeneral(false)}
-          />
-
           <ActionButtons
             expenses={currentMonthExpenses}
             onShowReport={() => setShowReport(true)}
@@ -271,6 +265,14 @@ function App() {
             onShowPastReports={() => setShowPastReports(true)}  
             onShowSmallCash={() => setShowSmallCash(true)}
             onShowGeneral={() => setShowGeneral(true)}
+            onShowExcelOptions={() => setIsExcelOptionsOpen(true)}
+          />
+
+          <General 
+            expenses={currentMonthExpenses}
+            balances={currentMonthBalances}
+            actionBtnClicked={showGeneral}
+            onClose={() => setShowGeneral(false)}
           />
 
           <SmallCash 
@@ -281,7 +283,6 @@ function App() {
 
           {showPastReports && (
             <PastReportsModal
-              // Filter out current month from pastReports before passing
               pastReports={pastReports.filter(report => {
                 const currentMonthStr = new Date().toLocaleString('he-IL', { 
                   month: 'long', 
@@ -326,21 +327,23 @@ function App() {
               balances={balances}
               onClose={() => {
                 setShowAllTimeAnalytics(false);
-                setShowAnalytics(true); // Return to regular analytics when closing
+                setShowAnalytics(true);
               }}
+            />
+          )}
+
+          {isExcelOptionsOpen && (
+            <AdminPanel
+              expenses={expenses}
+              balances={balances}
+              setBalances={setBalances}
+              setExpenses={setExpenses}
+              updateExpenseData={updateDataInFirestore}
+              onClose={() => setIsExcelOptionsOpen(false)}
             />
           )}
         </>
       )}
-        <div className="admin-panel-wrapper">
-          <AdminPanel
-            expenses={expenses}
-            balances={balances}
-            setBalances={setBalances}
-            setExpenses={setExpenses}
-            updateExpenseData={updateDataInFirestore}
-          />
-        </div>
     </div>
   );
 }

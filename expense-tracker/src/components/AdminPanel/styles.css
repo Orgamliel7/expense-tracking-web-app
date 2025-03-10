@@ -1,17 +1,18 @@
 .admin-panel-wrapper {
   position: fixed;
-  bottom: 200px;
-  right: 200px;
+  bottom: 20px;
+  right: 20px;
   z-index: 1000;
   width: auto;
   max-width: 200px;
+  /* Remove the display: none by default */
 }
 
 .admin-button {
   background-color: #9b1c1c;
-  font-size: 0.3rem;
+  font-size: 0.8rem;
   color: white;
-  padding: 3px 10px;
+  padding: 8px 15px;
   border-radius: 4px;
   border: none;
   cursor: pointer;

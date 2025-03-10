@@ -135,3 +135,51 @@
     min-height: 48px;
   }
 }
+
+/* Excel Options Button positioned at the extreme right edge */
+.excel-options-button {
+  padding: 12px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  color: white;
+  min-height: 54px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #9b1c1c 0%, #801212 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  
+  /* Position it at the extreme right */
+  position: absolute;
+  right: 0;
+  width: auto;
+  min-width: 54px;
+}
+
+/* Update the container to position correctly */
+.action-buttons-bottom {
+  display: flex;
+  position: relative; /* Needed for absolute positioning of child */
+  width: 100%;
+  padding-right: 0;
+}
+
+/* Hover and active states */
+.excel-options-button:hover {
+  background: linear-gradient(135deg, #b02222 0%, #9b1c1c 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 7px 14px rgba(0, 0, 0, 0.2);
+}
+
+.excel-options-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}

@@ -16,6 +16,7 @@ interface AdminPanelProps {
   setExpenses: React.Dispatch<React.SetStateAction<Expense[]>>;
   updateExpenseData: (balances: CategoryBalance, expenses: Expense[]) => Promise<void>;
   updateInitialBalance?: (newInitialBalance: CategoryBalance) => Promise<boolean>;
+  onClose?: () => void;
 }
 
 interface SearchResult {
@@ -44,6 +45,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   // Use INITIAL_BALANCE as the starting point for the modal
   const [updatedInitialBalances, setUpdatedInitialBalances] = useState<CategoryBalance>({...INITIAL_BALANCE});
+
+
+  
 
   const handleEscape = () => {
     if (isOpen) {
@@ -385,20 +389,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   return (
     <>
-    <div className="admin-panel-wrapper">
       <button 
         className="admin-button"
         onClick={() => setIsOpen(true)}
       >
-        Excel Options
+        Admin Options
       </button>
-    </div>
 
       {isOpen && (
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h2>Excel Operations</h2>
+              <h2>Admin Operations</h2>
               <button className="close-button" onClick={handleClose}>&times;</button>
             </div>
             
