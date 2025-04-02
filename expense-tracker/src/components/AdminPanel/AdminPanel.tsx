@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { FaUpload, FaDownload, FaEdit, FaSearch } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { FaUpload, FaDownload, FaEdit, FaSearch, FaEnvelope } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
-import { CategoryBalance, Expense, INITIAL_BALANCE} from '../../types';
+import { CategoryBalance, Expense, INITIAL_BALANCE } from '../../types';
 import { updateInitialBalance as updateInitialBalanceInFirebase } from '../../types';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { db } from '../../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import generalBalance from '../../values';
 
 import './styles.css';
 
@@ -27,6 +28,13 @@ interface SearchResult {
   note: string;
 }
 
+// Add this TypeScript declaration to avoid type errors
+declare global {
+  interface Window {
+    emailjs: any;
+  }
+}
+
 const AdminPanel: React.FC<AdminPanelProps> = ({
   expenses,
   balances,
@@ -43,11 +51,41 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   // Use INITIAL_BALANCE as the starting point for the modal
   const [updatedInitialBalances, setUpdatedInitialBalances] = useState<CategoryBalance>({...INITIAL_BALANCE});
 
+  // Check for end of month to send automatic email
+  useEffect(() => {
+    const checkEndOfMonth = () => {
+      const now = new Date();
+      const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      
+      // Check if today is the last day of the month
+      if (now.getDate() === lastDayOfMonth.getDate()) {
+        // Check if we're in the last hour of the day
+        if (now.getHours() === 23) {
+          // Only send if we haven't sent yet this hour
+          const lastSentKey = `lastExpenseEmailSent_${now.getFullYear()}_${now.getMonth()}`;
+          const lastSent = localStorage.getItem(lastSentKey);
+          
+          if (!lastSent) {
+            sendExpenseEmail();
+            // Mark as sent for this month
+            localStorage.setItem(lastSentKey, new Date().toISOString());
+          }
+        }
+      }
+    };
 
-  
+    // Check every hour
+    const intervalId = setInterval(checkEndOfMonth, 60 * 60 * 1000);
+    
+    // Also check when component mounts
+    checkEndOfMonth();
+
+    return () => clearInterval(intervalId);
+  }, [expenses]);
 
   const handleEscape = () => {
     if (isOpen) {
@@ -218,24 +256,124 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
-  const handleDownloadExcel = () => {
+  const createExpenseWorkbook = () => {
     if (expenses.length === 0) {
-      alert('אין הוצאות להורדה');
-      return;
+      return null;
     }
     
     // Format expenses for export
     const exportExpenses = expenses.map(expense => ({
       category: expense.category,
       amount: expense.amount,
-      date: expense.date,
+      date: new Date(expense.date).toLocaleDateString('he-IL'),
       note: expense.note || ''
     }));
     
     const worksheet = XLSX.utils.json_to_sheet(exportExpenses);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Expenses');
+    
+    return workbook;
+  };
+
+  const handleDownloadExcel = () => {
+    const workbook = createExpenseWorkbook();
+    
+    if (!workbook) {
+      alert('אין הוצאות להורדה');
+      return;
+    }
+    
     XLSX.writeFile(workbook, 'Expense_Report.xlsx');
+  };
+
+  // Load EmailJS script
+  const loadEmailJSScript = async () => {
+    // Only load if not already loaded
+    if (typeof window.emailjs === 'undefined') {
+      return new Promise<void>((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js';
+        script.async = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load EmailJS script'));
+        document.body.appendChild(script);
+      });
+    }
+    return Promise.resolve();
+  };
+
+  const sendExpenseEmail = async () => {
+    try {
+      setIsSendingEmail(true);
+      setError(null);
+      setMessage('');
+      
+      const workbook = createExpenseWorkbook();
+      
+      if (!workbook) {
+        setError('אין הוצאות לשליחה');
+        setIsSendingEmail(false);
+        return;
+      }
+      
+      // Convert workbook to base64 string
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      
+      // Get email from generalBalance - get the first key
+      const recipientEmail = Object.keys(generalBalance.email)[0];
+      
+      // Get other EmailJS details from generalBalance
+      const serviceID = Object.keys(generalBalance.serviceID)[0]; // Get service ID from values.js
+      const templateID = Object.keys(generalBalance.templateID)[0]; // Get template ID from values.js
+      const publicKey = Object.keys(generalBalance.publicKey)[0]; // Get public key from values.js
+      
+      // Convert Blob to Base64 string for email attachment
+      const reader = new FileReader();
+      const base64FilePromise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          const base64String = reader.result?.toString().split(',')[1];
+          if (base64String) {
+            resolve(base64String);
+          } else {
+            reject(new Error('Failed to convert file to base64'));
+          }
+        };
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      });
+      
+      const base64File = await base64FilePromise;
+      
+      // Load EmailJS script
+      await loadEmailJSScript();
+      
+      // Initialize EmailJS with the public key
+      window.emailjs.init(publicKey);
+      
+      // Current date for the email subject
+      const currentDate = new Date().toLocaleDateString('he-IL');
+      
+      // Send email with the Excel file attached
+      await window.emailjs.send(
+        serviceID,
+        templateID,
+        {
+          to_email: recipientEmail,
+          message: `דו״ח הוצאות מעודכן ליום ${currentDate}`,
+          attachment: base64File,
+          filename: `Expense_Report_${currentDate}.xlsx`
+        }
+      );
+      
+      setMessage(`דו״ח הוצאות נשלח בהצלחה ל-${recipientEmail}`);
+    } catch (err) {
+      console.error('Error sending email:', err);
+      setError(err instanceof Error ? err.message : 'שגיאה בשליחת המייל');
+    } finally {
+      setIsSendingEmail(false);
+    }
   };
 
   const handleShowBalanceModal = () => {
@@ -423,6 +561,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     onClick={handleDownloadExcel}
                   >
                     <FaDownload /> הורד כקובץ אקסל
+                  </button>
+
+                  <button 
+                    className="excel-button send-email"
+                    onClick={sendExpenseEmail}
+                    disabled={isSendingEmail}
+                  >
+                    <FaEnvelope /> {isSendingEmail ? 'שולח...' : 'שלח דו״ח במייל'}
                   </button>
 
                   <button 
