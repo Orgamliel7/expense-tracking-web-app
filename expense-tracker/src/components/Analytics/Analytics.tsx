@@ -32,9 +32,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose, onSh
   const analyticsRef = useRef<HTMLDivElement>(null);
   useBackButtonClose({ onClose });
   
-
-
-  // Fetch all expenses from Firestore including February
+  // Fetch all expenses from Firestore
   useEffect(() => {
     const fetchAllExpenses = async () => {
       try {
@@ -65,15 +63,31 @@ const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose, onSh
     const totalInitialBudget = Object.values(INITIAL_BALANCE).reduce((a, b) => a + b, 0);
     const monthlyData: Record<string, MonthlyData> = {};
 
-    // Initialize data for February and March 2025
-    const months = [
-      { month: 2, year: 2025, key: '02/2025' },
-      { month: 3, year: 2025, key: '03/2025' }
-    ];
+    // Get unique months from expenses data
+    const uniqueMonths = new Set<string>();
     
-    months.forEach(({ month, year, key }) => {
-      monthlyData[key] = {
-        month: key,
+    // Process all expenses and collect unique months
+    allExpenses.forEach(expense => {
+      // Parse date from expense
+      const expDate = new Date(expense.date);
+      if (isNaN(expDate.getTime())) {
+        console.warn(`Invalid date: ${expense.date}`);
+        return;
+      }
+
+      const monthKey = `${String(expDate.getMonth() + 1).padStart(2, '0')}/${expDate.getFullYear()}`;
+      uniqueMonths.add(monthKey);
+    });
+
+    // Add current month if not already in the set
+    const today = new Date();
+    const currentMonthKey = `${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+    uniqueMonths.add(currentMonthKey);
+
+    // Initialize data for all unique months
+    uniqueMonths.forEach(monthKey => {
+      monthlyData[monthKey] = {
+        month: monthKey,
         saved: totalInitialBudget,
         totalSpent: 0,
         categorySpending: Object.keys(INITIAL_BALANCE).reduce((acc, category) => ({
@@ -88,30 +102,11 @@ const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose, onSh
       // Parse date from expense
       const expDate = new Date(expense.date);
       if (isNaN(expDate.getTime())) {
-        console.warn(`Invalid date: ${expense.date}`);
         return;
       }
 
       const monthKey = `${String(expDate.getMonth() + 1).padStart(2, '0')}/${expDate.getFullYear()}`;
       
-      // Skip if not February or March 2025
-      if (monthKey !== '02/2025' && monthKey !== '03/2025') {
-        return;
-      }
-      
-      // Initialize month data if not exists
-      if (!monthlyData[monthKey]) {
-        monthlyData[monthKey] = {
-          month: monthKey,
-          saved: totalInitialBudget,
-          totalSpent: 0,
-          categorySpending: Object.keys(INITIAL_BALANCE).reduce((acc, category) => ({
-            ...acc,
-            [category]: { spent: 0, percentage: 0 }
-          }), {})
-        };
-      }
-
       // Update month data
       monthlyData[monthKey].totalSpent += expense.amount;
       monthlyData[monthKey].saved = totalInitialBudget - monthlyData[monthKey].totalSpent;
@@ -135,7 +130,6 @@ const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose, onSh
     return monthlyData;
   }, [allExpenses]);
 
-
   // Convert monthly data to array and sort
   const monthlySavings = useMemo(() => {
     return Object.values(calculateMonthlyData)
@@ -146,22 +140,22 @@ const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose, onSh
         rawMonth: data.month
       }))
       .sort((a, b) => {
-        const [aMonth, aYear] = a.month.split('/');
-        const [bMonth, bYear] = b.month.split('/');
-        const dateA = new Date(parseInt('20' + aYear), parseInt(aMonth) - 1);
-        const dateB = new Date(parseInt('20' + bYear), parseInt(bMonth) - 1);
+        const [aMonth, aYear] = a.rawMonth.split('/');
+        const [bMonth, bYear] = b.rawMonth.split('/');
+        const dateA = new Date(parseInt(aYear), parseInt(aMonth) - 1);
+        const dateB = new Date(parseInt(bYear), parseInt(bMonth) - 1);
         return dateA.getTime() - dateB.getTime(); // Sort ascending by date
       });
   }, [calculateMonthlyData]);
 
-  // Set default selected month to current month (March)
+  // Set default selected month to current month
   useEffect(() => {
-    if (!selectedMonth && monthlySavings.length > 0) {
+    if (monthlySavings.length > 0) {
       const today = new Date();
       const currentMonthKey = `${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
       setSelectedMonth(currentMonthKey);
     }
-  }, [monthlySavings, selectedMonth]);
+  }, [monthlySavings]);
 
   // Get selected month's category spending for pie chart
   const categorySpending = useMemo(() => {
@@ -198,7 +192,6 @@ const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose, onSh
     }
   };
   
-
   const formatMonth = (monthKey: string): string => {
     const [month, year] = monthKey.split('/');
     const monthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
@@ -208,7 +201,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ expenses, balances, onClose, onSh
   if (isLoading) {
     return (
       <div className="analytics-modal">
-    <div className="analytics-content" ref={analyticsRef}>
+        <div className="analytics-content" ref={analyticsRef}>
           <h2>אנליזות</h2>
           <div className="loading">טוען נתונים...</div>
           <button onClick={onClose} className="close-button">

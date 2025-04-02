@@ -27,7 +27,6 @@ const AllTimeAnalytics: React.FC<AllTimeAnalyticsProps> = ({ expenses, balances,
   const [activeTab, setActiveTab] = useState<'overview' | 'categories'>('overview');
   useBackButtonClose({ onClose });
 
-
   // Fetch all expenses from Firestore
   useEffect(() => {
     const fetchAllExpenses = async () => {
@@ -54,22 +53,49 @@ const AllTimeAnalytics: React.FC<AllTimeAnalyticsProps> = ({ expenses, balances,
     fetchAllExpenses();
   }, []);
 
-  // Calculate how many months have passed since February 2025
+  // Find earliest month with data
+  const startDate = useMemo(() => {
+    if (allExpenses.length === 0) {
+      // Default to current month if no expenses
+      return new Date();
+    }
+
+    // Find the earliest date in expenses
+    const dates = allExpenses
+      .map(expense => new Date(expense.date))
+      .filter(date => !isNaN(date.getTime())); // Filter out invalid dates
+    
+    if (dates.length === 0) {
+      return new Date(); // Default to current month if no valid dates
+    }
+    
+    // Get the earliest date
+    const earliestDate = new Date(Math.min(...dates.map(date => date.getTime())));
+    // Set to the first day of that month
+    return new Date(earliestDate.getFullYear(), earliestDate.getMonth(), 1);
+  }, [allExpenses]);
+
+  // Calculate how many months have passed since start date
   const monthsElapsed = useMemo(() => {
-    const startDate = new Date(2025, 1, 1); // February 1, 2025
     const currentDate = new Date();
     
     return (
       (currentDate.getFullYear() - startDate.getFullYear()) * 12 +
       (currentDate.getMonth() - startDate.getMonth()) + 1
     );
-  }, []);
+  }, [startDate]);
+
+  // Format the start date for display
+  const formattedStartDate = useMemo(() => {
+    const monthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+    return `${monthNames[startDate.getMonth()]} ${startDate.getFullYear()}`;
+  }, [startDate]);
 
   // Calculate all-time data for each category
   const categoryAnalysis = useMemo((): CategoryAnalysis[] => {
     // Calculate total budget allocated across all months
     const categoryBudgets = Object.entries(INITIAL_BALANCE).map(([category, budget]) => {
-      // Total amount allocated to this category since February 2025
+      // Total amount allocated to this category since start date
       const initialBudget = budget * monthsElapsed;
       
       // Total amount spent in this category
@@ -120,27 +146,41 @@ const AllTimeAnalytics: React.FC<AllTimeAnalyticsProps> = ({ expenses, balances,
 
   // Calculate monthly spending trend
   const monthlySpendingTrend = useMemo(() => {
-    // Create a map of all months from Feb 2025 to current month
+    // Find unique months from expense data
+    const uniqueMonths = new Set<string>();
+    
+    // Add months from expense data
+    allExpenses.forEach(expense => {
+      const expDate = new Date(expense.date);
+      if (isNaN(expDate.getTime())) {
+        return;
+      }
+      
+      const monthKey = `${String(expDate.getMonth() + 1).padStart(2, '0')}/${expDate.getFullYear()}`;
+      uniqueMonths.add(monthKey);
+    });
+    
+    // Add current month if not already in the set
+    const currentDate = new Date();
+    const currentMonthKey = `${String(currentDate.getMonth() + 1).padStart(2, '0')}/${currentDate.getFullYear()}`;
+    uniqueMonths.add(currentMonthKey);
+    
+    // Create a map of all collected months
     const months: Record<string, { month: string, totalSpent: number, displayName: string }> = {};
     
-    const startDate = new Date(2025, 1, 1); // February 1, 2025
-    const currentDate = new Date();
-    
-    // Generate all month keys
-    for (let year = startDate.getFullYear(); year <= currentDate.getFullYear(); year++) {
-      const startMonth = year === startDate.getFullYear() ? startDate.getMonth() : 0;
-      const endMonth = year === currentDate.getFullYear() ? currentDate.getMonth() : 11;
+    // Initialize months with zero values
+    uniqueMonths.forEach(monthKey => {
+      const [monthStr, yearStr] = monthKey.split('/');
+      const month = parseInt(monthStr) - 1;
+      const year = parseInt(yearStr);
+      const monthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
       
-      for (let month = startMonth; month <= endMonth; month++) {
-        const monthKey = `${String(month + 1).padStart(2, '0')}/${year}`;
-        const monthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
-        months[monthKey] = {
-          month: monthKey,
-          totalSpent: 0,
-          displayName: `${monthNames[month]} ${year}`
-        };
-      }
-    }
+      months[monthKey] = {
+        month: monthKey,
+        totalSpent: 0,
+        displayName: `${monthNames[month]} ${year}`
+      };
+    });
     
     // Add spending data to each month
     allExpenses.forEach(expense => {
@@ -203,7 +243,7 @@ const AllTimeAnalytics: React.FC<AllTimeAnalyticsProps> = ({ expenses, balances,
     <div className="analytics-modal all-time-analytics">
       <div className="analytics-content">
         <h2>ניתוח הוצאות כולל</h2>
-        <p className="all-time-subtitle">מאז פברואר 2025 ועד היום ({monthsElapsed} חודשים)</p>
+        <p className="all-time-subtitle">מאז {formattedStartDate} ועד היום ({monthsElapsed} חודשים)</p>
         
         <div className="all-time-summary">
           <div className="summary-item total-budget">

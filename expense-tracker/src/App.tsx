@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { CategoryButtons } from './components/CategoryButtons/CategoryButtons';
 import { ExpenseForm } from './components/ExpenseForm/ExpenseForm';
 import { BalanceList } from './components/BalanceList/BalanceList';
@@ -31,6 +31,11 @@ function App() {
   const [showSmallCash, setShowSmallCash] = useState(false);
   const [showGeneral, setShowGeneral] = useState(false);
   
+  // Use refs to prevent infinite loops
+  const isInitialized = useRef(false);
+  const isProcessingMonthlyReset = useRef(false);
+  const lastFirestoreUpdate = useRef<string | null>(null);
+  
   const { isLoading, error, withLoading } = useLoading();
 
   // Filter expenses to only include current month
@@ -46,7 +51,7 @@ function App() {
     });
   }, [expenses]);
 
-  // Calculate current month balances based on initial balances and current month expenses
+  // Calculate current month balances
   const currentMonthBalances = useMemo(() => {
     // Start with initial balances
     const calculatedBalances = { ...INITIAL_BALANCE };
@@ -59,99 +64,162 @@ function App() {
     return calculatedBalances;
   }, [currentMonthExpenses]);
 
-  const updateDataInFirestore = async (updatedBalances: CategoryBalance, updatedExpenses: Expense[]) => {
-    const sanitizedBalances = Object.fromEntries(
-      Object.entries(updatedBalances).map(([key, value]) => [key, value ?? 0])
-    );
-  
-    const sanitizedExpenses = updatedExpenses.map(({ category, amount, date, note }) => ({
-      category,
-      amount: amount ?? 0,
-      date,
-      note: note ?? '',
-    }));
-  
+  const updateDataInFirestore = useCallback(async (updatedBalances: CategoryBalance, updatedExpenses: Expense[]): Promise<void> => {
+    // Prevent duplicate updates
+    const updateSignature = JSON.stringify({ 
+      balances: updatedBalances, 
+      expensesLength: updatedExpenses.length 
+    });
+    
+    if (updateSignature === lastFirestoreUpdate.current) {
+      console.log('Skipping duplicate Firestore update');
+      return;
+    }
+    
     const docRef = doc(db, 'balances', 'expenseData');
-  
+    
     try {
+      // Make sure expenses are properly structured for Firestore
+      const sanitizedExpenses = updatedExpenses.map(expense => ({
+        ...expense,
+        amount: Number(expense.amount) || 0,
+        date: expense.date || new Date().toISOString(),
+        displayAmount: expense.displayAmount || '',
+        note: expense.note || '',
+      }));
+      
       await setDoc(docRef, {
-        balances: sanitizedBalances,
+        balances: updatedBalances,
         expenses: sanitizedExpenses,
+        lastUpdated: new Date().toISOString()
       });
+      
+      // Save update signature to prevent duplicates
+      lastFirestoreUpdate.current = updateSignature;
       console.log('Document successfully updated');
     } catch (error) {
       console.error('Error updating document:', error);
-      throw new Error('Failed to update expense data');
+      throw error;
     }
-  };
+  }, []);
 
-  const createInitialPastReport = async () => {
-    if (pastReports.length === 0 && expenses.length > 0) {
-      const now = new Date();
-      const monthYear = now.toLocaleString('he-IL', { month: 'long', year: 'numeric' });
+  const verifyUpdate = useCallback(async (lastExpense: Expense): Promise<boolean> => {
+    const docRef = doc(db, 'balances', 'expenseData');
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      const data = docSnap.data();
       
-      const initialMonthlyReport: MonthlyReport = {
-        month: monthYear,
-        balances: { ...balances },
-        expenses: [...expenses],
-      };
+      // Check if our new expense is actually in the database
+      const foundInDb = data.expenses.some((e: Expense) => 
+        e.date === lastExpense.date && 
+        Math.abs(e.amount - lastExpense.amount) < 0.01 && 
+        e.category === lastExpense.category
+      );
+      
+      if (!foundInDb) {
+        console.error("Expense was not properly saved to Firestore!");
+        return false;
+      }
+      return true;
+    }
+    return false;
+  }, []);
 
-      const docRef = doc(db, 'balances', 'pastReports');
-      const updatedPastReports = [initialMonthlyReport];
+  const createInitialPastReport = useCallback(async () => {
+    // Prevent running multiple times
+    if (isProcessingMonthlyReset.current) return;
+    
+    if (pastReports.length === 0 && expenses.length > 0) {
+      isProcessingMonthlyReset.current = true;
       
       try {
+        const now = new Date();
+        const monthYear = now.toLocaleString('he-IL', { month: 'long', year: 'numeric' });
+        
+        const initialMonthlyReport: MonthlyReport = {
+          month: monthYear,
+          balances: { ...balances },
+          expenses: [...expenses],
+        };
+
+        const docRef = doc(db, 'balances', 'pastReports');
+        const updatedPastReports = [initialMonthlyReport];
+        
         await setDoc(docRef, { reports: updatedPastReports });
         setPastReports(updatedPastReports);
       } catch (error) {
         console.error('Error creating initial past report:', error);
+      } finally {
+        isProcessingMonthlyReset.current = false;
       }
     }
-  };
+  }, [pastReports.length, expenses, balances]);
 
-  const checkMonthlyReset = async () => {
+  const checkMonthlyReset = useCallback(async () => {
+    // Prevent running multiple times
+    if (isProcessingMonthlyReset.current) return;
+    
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
     if (today.getTime() === firstDayOfMonth.getTime()) {
-      const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const monthYear = previousMonth.toLocaleString('he-IL', { month: 'long', year: 'numeric' });
+      isProcessingMonthlyReset.current = true;
       
-      const monthlyReport: MonthlyReport = {
-        month: monthYear,
-        balances: { ...balances },
-        expenses: [...expenses],
-      };
+      try {
+        // Get previous month
+        const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const monthYear = previousMonth.toLocaleString('he-IL', { month: 'long', year: 'numeric' });
+        
+        // Filter expenses for the previous month only
+        const previousMonthExpenses = expenses.filter(expense => {
+          const expenseDate = new Date(expense.date);
+          return expenseDate.getMonth() === previousMonth.getMonth() && 
+                expenseDate.getFullYear() === previousMonth.getFullYear();
+        });
+        
+        // Create monthly report with only previous month's expenses
+        const monthlyReport = {
+          month: monthYear,
+          balances,
+          expenses: previousMonthExpenses
+        };
+        
+        // Check if we already have this report
+        const existingReportIndex = pastReports.findIndex(r => r.month === monthYear);
+        let updatedPastReports = [...pastReports];
+        
+        if (existingReportIndex >= 0) {
+          // Update existing report
+          updatedPastReports[existingReportIndex] = monthlyReport;
+        } else {
+          // Add new report
+          updatedPastReports = [...pastReports, monthlyReport];
+        }
 
-      const docRef = doc(db, 'balances', 'pastReports');
-      const updatedPastReports = [...pastReports, monthlyReport];
-      await setDoc(docRef, { reports: updatedPastReports });
-      setPastReports(updatedPastReports);
+        // Update past reports in Firebase
+        const docRef = doc(db, 'balances', 'pastReports');
+        await setDoc(docRef, { reports: updatedPastReports });
+        setPastReports(updatedPastReports);
 
-      setBalances(INITIAL_BALANCE);
-      setExpenses([]);
-      await updateDataInFirestore(INITIAL_BALANCE, []);
+        // Reset balances to initial values
+        setBalances(INITIAL_BALANCE);
+        
+        // Keep expenses data in Firebase
+        await updateDataInFirestore(INITIAL_BALANCE, expenses);
+      } catch (error) {
+        console.error('Error during monthly reset:', error);
+      } finally {
+        isProcessingMonthlyReset.current = false;
+      }
     }
-  };
+  }, [expenses, balances, pastReports, updateDataInFirestore]);
 
+  // Initialize the app once on mount
   useEffect(() => {
-    // Check for reset when app loads
-    withLoading(checkMonthlyReset);
-    
-    // Set up a daily check at midnight
-    const now = new Date();
-    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
-    const timeUntilMidnight = tomorrow.getTime() - now.getTime();
-    
-    const midnightTimer = setTimeout(() => {
-      withLoading(checkMonthlyReset);
-    }, timeUntilMidnight);
-    
-    return () => clearTimeout(midnightTimer);
-  }, []);
+    if (isInitialized.current) return;
 
-  useEffect(() => {
     const fetchPastReports = async () => {
       const docRef = doc(db, 'balances', 'pastReports');
       const docSnap = await getDoc(docRef);
@@ -165,54 +233,105 @@ function App() {
     };
 
     const initializeApp = async () => {
-      await fetchInitialBalance();
-      await fetchPastReports();
-      const mainDocRef = doc(db, 'balances', 'expenseData');
-      const mainDocSnap = await getDoc(mainDocRef);
+      try {
+        await fetchInitialBalance();
+        await fetchPastReports();
+        
+        const mainDocRef = doc(db, 'balances', 'expenseData');
+        const mainDocSnap = await getDoc(mainDocRef);
 
-      if (mainDocSnap.exists()) {
-        const data = mainDocSnap.data();
-        if (data.balances) setBalances(data.balances as CategoryBalance);
-        if (data.expenses) setExpenses(data.expenses as Expense[]);
-
-        await createInitialPastReport();
-        await checkMonthlyReset();
+        if (mainDocSnap.exists()) {
+          const data = mainDocSnap.data();
+          if (data.balances) setBalances(data.balances as CategoryBalance);
+          if (data.expenses) setExpenses(data.expenses as Expense[]);
+          
+          // Save the initial data signature to prevent immediate re-writes
+          lastFirestoreUpdate.current = JSON.stringify({ 
+            balances: data.balances, 
+            expensesLength: data.expenses?.length || 0 
+          });
+        }
+        
+        isInitialized.current = true;
+      } catch (error) {
+        console.error('Error initializing app:', error);
       }
     };
 
     withLoading(initializeApp);
-  }, []);
+  }, [withLoading]);
 
-  const handleExpenseSubmit = async (amount: number, note: string) => {
+  // Run monthly check/initialization only after data is loaded and once per session
+  useEffect(() => {
+    if (!isInitialized.current) return;
+    
+    const setupInitialStuff = async () => {
+      // Only run these once after initialization
+      if (expenses.length > 0 && !isProcessingMonthlyReset.current) {
+        await createInitialPastReport();
+        await checkMonthlyReset();
+      }
+    };
+    
+    setupInitialStuff();
+    
+    // Set up a midnight check (runs once per day)
+    const now = new Date();
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    tomorrow.setHours(0, 1, 0, 0); // 00:01 to avoid exactly midnight
+    const timeUntilMidnight = tomorrow.getTime() - now.getTime();
+    
+    const midnightTimer = setTimeout(() => {
+      checkMonthlyReset();
+    }, timeUntilMidnight);
+    
+    return () => clearTimeout(midnightTimer);
+  }, [expenses.length, createInitialPastReport, checkMonthlyReset]);
+
+  const handleExpenseSubmit = useCallback(async (amount: number, note: string) => {
     if (selectedCategory) {
-      await withLoading(async () => {
-        const newBalances = {
-          ...balances,
-          [selectedCategory]: balances[selectedCategory] - amount,
-        };
-  
-        const now = new Date();
-        const formattedDate = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-  
-        const newExpense: Expense = {
-          category: selectedCategory,
-          amount,
-          date: formattedDate,
-          note: note.trim() || undefined,
-          displayAmount: ''
-        };
-  
-        const updatedExpenses = [...expenses, newExpense];
-  
-        setBalances(newBalances);
-        setExpenses(updatedExpenses);
-        await updateDataInFirestore(newBalances, updatedExpenses);
-        setSelectedCategory(null);
-      });
+      try {
+        await withLoading(async () => {
+          const newBalances = {
+            ...balances,
+            [selectedCategory]: balances[selectedCategory] - amount,
+          };
+          
+          const now = new Date();
+          const formattedDate = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+          
+          const newExpense: Expense = {
+            category: selectedCategory,
+            amount: Number(amount),
+            date: formattedDate,
+            note: note.trim() || '',
+            displayAmount: '',
+          };
+          
+          const updatedExpenses: Expense[] = [...expenses, newExpense];
+          
+          // Update Firestore FIRST
+          await updateDataInFirestore(newBalances, updatedExpenses);
+          
+          // Verify update succeeded
+          const verified = await verifyUpdate(newExpense);
+          if (!verified) {
+            throw new Error("Failed to verify expense was saved to Firestore");
+          }
+          
+          // Only update local state AFTER successful Firestore update
+          setBalances(newBalances);
+          setExpenses(updatedExpenses);
+          setSelectedCategory(null);
+        });
+      } catch (err) {
+        console.error("Failed to save expense:", err);
+        alert("Failed to save expense. Please try again.");
+      }
     }
-  };
-  
-  const handleEscape = () => {
+  }, [selectedCategory, balances, expenses, updateDataInFirestore, verifyUpdate, withLoading]);
+
+  const handleEscape = useCallback(() => {
     setShowReport(false);
     setShowAnalytics(false);
     setShowAllTimeAnalytics(false);
@@ -221,7 +340,7 @@ function App() {
     setShowGeneral(false); 
     setIsExcelOptionsOpen(false);
     setSelectedCategory(null);
-  };
+  }, []);
 
   useKeyboardShortcuts({
     onEscape: handleEscape
